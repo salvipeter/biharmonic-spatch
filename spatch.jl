@@ -107,7 +107,7 @@ affine_combine(p, x, q) = p * (1 - x) + q * x
 
 function vertices(poly, resolution)
     n = length(poly)
-    lines = [(poly[mod1(i - 1, n)], poly[i]) for i in 1:n]
+    lines = [(poly[mod1(i-1,n)], poly[i]) for i in 1:n]
     center = [0.0, 0.0]
     result = [center]
     for j in 1:resolution
@@ -155,14 +155,20 @@ end
 
 # C0 ribbon computation
 
+function make_index(n, pairs...)
+    index = zeros(Int, n)
+    for (i, v) in pairs
+        index[mod1(i,n)] = v
+    end
+    index
+end
+
 function c0_patch(ribbons)
     result = Dict{Vector{Int},Vector{Float64}}()
     n = maximum(map(x -> x[1], collect(keys(ribbons)))) + 1
     d = maximum(map(x -> x[2], collect(keys(ribbons))))
     for i in 0:n-1, j in 0:d
-        index = zeros(Int, n)
-        index[i+1] = d - j
-        index[mod1(i+2, n)] = j
+        index = make_index(n, (i+1,d-j), (i+2,j))
         result[index] = ribbons[i,j,0]
     end
     result
@@ -179,13 +185,81 @@ function affine_image(points)
     map(p -> M * [p; 1], poly)
 end
 
-function g1normals(ribbons)
+function panel_indices(n, d, i, j)
+    index = make_index(n, (i,d-j), (i+1,j))
+    map(1:n) do j
+        result = copy(index)
+        index[mod1(i+j-1, n)] -= 1
+        index[mod1(i+j, n)] += 1
+        result
+    end
+end
+
+function set_panels!(cnet)
+    n = length(first(keys(cnet)))
+    d = sum(first(keys(cnet)))
+    for i in 1:n, j in 0:d-1
+        idxs = panel_indices(n, d, i, j)
+        points = affine_image(map(idx -> get!(cnet, idx, []), idxs))
+        foreach((idx, p) -> cnet[idx] = p, idxs, points)
+    end
+end
+
+function g1normals(ribbons, i)
+    i -= 1
+    d = maximum(map(x -> x[2], collect(keys(ribbons))))
+    result = []
+    function add_normal!(j, p)
+        o = ribbons[i,j,0]
+        q = ribbons[i,j+1,0]
+        push!(result, normalize!(cross(q - o, p - o)))
+    end
+    prev = ribbons[i,0,1]
+    add_normal!(0, prev)
+    for j in 1:d-1
+        c = j / d
+        mid = affine_combine(ribbons[i,j,0], c, ribbons[i,j-1,0])
+        next = (ribbons[i,j,1] - ribbons[i,j,0] - c * prev + mid) / (1 - c)
+        add_normal!(j, next)
+        prev = next
+    end
+    result
+end
+
+function panel_leg(cnet, normal, i, j)
+    n = length(first(keys(cnet)))
+    d = sum(first(keys(cnet)))
+    left_corner = make_index(n, (i,d))
+    left = make_index(n, (i-1,1), (i,d-1))
+    right = make_index(n, (i,d-1), (i+1,1))
+    left_panel = map(idx -> cnet[idx], [left, left_corner, right])
+    pleft = left_panel[3]
+    pleftleg = affine_image([left_panel; Vector(undef, n - 3)])[4]
+    
+    right_corner = make_index(n, (i+1,d))
+    right_leg = make_index(n, (i+1,d-1), (i+2,1))
+    pright = cnet[right_corner]
+    prightleg = cnet[right_leg]
+
+    current = make_index(n, (i,d-j), (i+1,j))
+    pcurrent = cnet[current]
+
+    c = (j - 1) / (d - 1)
+    v = affine_combine(pleftleg - pleft, c, prightleg - pright)
+    pcurrent + v - normal * dot(v, normal)
 end
 
 function set_g1_continuity!(cnet, ribbons)
-    # TODO
-    # atszamolja eloszor a GB-tipusu ribbont Bezier-haromszoggel valo kapcsolodasra,
-    # es a Bezier-haromszog sikjai alapjan beallitja a G1 folytonossagot
+    n = length(first(keys(cnet)))
+    d = sum(first(keys(cnet)))
+    for i in 1:n
+        normals = g1normals(ribbons, i)
+        for j in 1:d
+            index = make_index(n, (i,d-j), (i+1,j-1), (i+2,1))
+            cnet[index] = panel_leg(cnet, normals[j], i, j)
+        end
+    end
+    set_panels!(cnet)
 end
 
 
@@ -268,7 +342,7 @@ function write_ribbon(ribbons, filename, index, resolution)
     bezier(n, k, x) = binomial(n, k) * x ^ k * (1 - x) ^ (n - k)
     samples = [[u, v] for u in range(0.0, stop=1.0, length=resolution)
                       for v in range(0.0, stop=1.0, length=resolution)]
-    verts = map(samples) do
+    verts = map(samples) do p
         result = [0, 0, 0]
         for i in 0:d, j in 0:1
             result += ribbons[index,i,j] * bezier(d, i, p[1]) * bezier(1, j, p[2])
