@@ -38,12 +38,6 @@ function biharmonic_mask(xs)
     result
 end
 
-function set_g1_continuity!(cnet)
-    # TODO
-    # atszamolja eloszor a GB-tipusu ribbont Bezier-haromszoggel valo kapcsolodasra,
-    # es a Bezier-haromszog sikjai alapjan beallitja a G1 folytonossagot
-end
-
 function optimize_controlnet!(cnet; g1 = true)
     isfixed = g1 ? isribbon : isboundary
     n = length(first(keys(cnet)))
@@ -51,7 +45,7 @@ function optimize_controlnet!(cnet; g1 = true)
     movable = filter(i -> !isfixed(i), indices(n, d))
     mapping = Dict(map(p -> (p[2], p[1]), enumerate(movable)))
     m = length(movable)
-    A = zeros(m, m)     # or maybe A should be n x m and use LSQ?
+    A = zeros(m, m)
     b = zeros(m, 3)
     for (i, p) in enumerate(movable)
         for (q, w) in biharmonic_mask(p)
@@ -159,72 +153,39 @@ function eval_all(cnet, resolution)
 end
 
 
-# Input
+# C0 ribbon computation
 
-function boundary_indices(n, d)
-    function step!(xs)
-        i = 1
-        while xs[i] == 0 || xs[i] + xs[mod1(i + 1, n)] != d
-            i += 1
-        end
-        xs[i] -= 1
-        xs[mod1(i + 1, n)] += 1
-    end
-    xs = [d; zeros(Int, n - 1)]
-    result = []
-    for i in 1:n*d
-        push!(result, copy(xs))
-        step!(xs)
-    end
-    result
-end
-
-function ribbon_indices(n, d)
-    @assert d > 2 "This function does not work for degree <= 2"
-    function step(xs)
-        i = 1
-        while xs[i] == 0 || xs[i] + xs[mod1(i + 1, n)] != d
-            i += 1
-        end
-        xs[i] == d && return nothing
-        right = copy(xs)
-        right[mod1(i + 2, n)] += 1
-        right[mod1(i + 1, n)] -= 1
-        xs[i] == d - 1 && return right
-        left = copy(xs)
-        left[mod1(i - 1, n)] += 1
-        left[i] -= 1
-        (left, right)
-    end
-    boundary = boundary_indices(n, d)
-    points = filter(x -> x != nothing, [step(xs) for xs in boundary])
-    result = [[]]
-    for p in points
-        if isa(p, Tuple)
-            push!(result, [p[1], p[2]])
-        else
-            push!(result[end], p)
-        end
-    end
-    push!(result[1], result[end]...)
-    result[1:end-1]
-end
-
-function readGBP(filename)
-    read_numbers(f, numtype) = map(s -> parse(numtype, s), split(readline(f)))
+function c0_patch(ribbons)
     result = Dict{Vector{Int},Vector{Float64}}()
-    open(filename) do f
-        n, d = read_numbers(f, Int)
-        readline(f)
-        for i in boundary_indices(n, d)
-            result[i] = read_numbers(f, Float64)
-        end
-        for idx in ribbon_indices(n, d)
-            p = read_numbers(f, Float64)
-            foreach(i -> result[i] = p, idx)
-        end
+    n = maximum(map(x -> x[1], collect(keys(ribbons)))) + 1
+    d = maximum(map(x -> x[2], collect(keys(ribbons))))
+    for i in 0:n-1, j in 0:d
+        index = zeros(Int, n)
+        index[i+1] = d - j
+        index[mod1(i+2, n)] = j
+        result[index] = ribbons[i,j,0]
     end
     result
+end
+
+
+# G1 ribbon computation
+
+function affine_image(points)
+    poly = regularpoly(length(points))
+    A = [poly[1]' 1; poly[2]' 1; poly[3]' 1]
+    b = [points[1]'; points[2]'; points[3]']
+    M = (A \ b)'
+    map(p -> M * [p; 1], poly)
+end
+
+function g1normals(ribbons)
+end
+
+function set_g1_continuity!(cnet, ribbons)
+    # TODO
+    # atszamolja eloszor a GB-tipusu ribbont Bezier-haromszoggel valo kapcsolodasra,
+    # es a Bezier-haromszog sikjai alapjan beallitja a G1 folytonossagot
 end
 
 
@@ -265,17 +226,8 @@ function write_surface(cnet, filename, resolution)
     writeOBJ(vs, ts, filename)
 end
 
-function spatch_test(name, resolution, g1_continuity = true)
-    cnet = readGBP("$name.gbp")
-    g1_continuity && set_g1_continuity!(cnet)
-    optimize_controlnet!(cnet, g1 = g1_continuity)
-    write_surface(cnet, "$name.obj", resolution)
-    write_cnet(cnet, "$name-cnet.obj")
-    write_cnet(cnet, "$name-ribbon.obj", g1 = g1_continuity, only_fixed = true)
-end
-
 
-# Bezier ribbon evaluation for comparison
+# Bezier ribbon I/O & evaluation
 
 function read_ribbons(filename)
     read_numbers(f, numtype) = map(s -> parse(numtype, s), split(readline(f)))
@@ -299,11 +251,11 @@ function read_ribbons(filename)
                 col = row
             end
             p = read_numbers(f, Float64)
-            result[(side,col,row)] = p
+            result[side,col,row] = p
             if col < l
-                result[(mod(side-1,n),d-row,col)] = p
+                result[mod(side-1,n),d-row,col] = p
             elseif d - col < l
-                result[(mod(side+1,n),row,d-col)] = p
+                result[mod(side+1,n),row,d-col] = p
             end
             col += 1
         end
@@ -319,7 +271,7 @@ function write_ribbon(ribbons, filename, index, resolution)
     verts = map(samples) do
         result = [0, 0, 0]
         for i in 0:d, j in 0:1
-            result += ribbons[(index,i,j)] * bezier(d, i, p[1]) * bezier(1, j, p[2])
+            result += ribbons[index,i,j] * bezier(d, i, p[1]) * bezier(1, j, p[2])
         end
         result
     end
@@ -330,4 +282,40 @@ function write_ribbon(ribbons, filename, index, resolution)
         push!(tris, [index, index - 1, index - resolution - 1])
     end
     writeOBJ(verts, tris, filename)
+end
+
+function write_bezier_cnet(ribbons, filename)
+    n = maximum(map(x -> x[1], collect(keys(ribbons))))
+    d = maximum(map(x -> x[2], collect(keys(ribbons))))
+    g1 = filter(idx -> idx[3] <= 1, keys(ribbons))
+    mapping = Dict(map(p -> (p[2], p[1]), enumerate(g1)))
+    open(filename, "w") do f
+        for idx in g1
+            p = ribbons[idx]
+            println(f, "v $(p[1]) $(p[2]) $(p[3])")
+        end
+        for idx in g1
+            i, j, k = idx
+            from = mapping[idx]
+            for next in [(i, j + 1, k), (i, j, k + 1)]
+                !haskey(mapping, next) && continue
+                to = mapping[next]
+                println(f, "l $from $to")
+            end
+        end
+    end
+end
+
+
+# Main function
+
+function spatch_test(name, resolution, g1_continuity = true)
+    ribbons = read_ribbons("$name.gbp")
+    cnet = c0_patch(ribbons)
+    g1_continuity && set_g1_continuity!(cnet, ribbons)
+    optimize_controlnet!(cnet, g1 = g1_continuity)
+    write_surface(cnet, "$name.obj", resolution)
+    write_cnet(cnet, "$name-cnet.obj")
+    write_cnet(cnet, "$name-ribbon.obj", g1 = g1_continuity, only_fixed = true)
+    g1_continuity && write_bezier_cnet(ribbons, "$name-bezier-cnet.obj")
 end
