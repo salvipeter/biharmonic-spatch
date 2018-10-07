@@ -2,11 +2,14 @@ using LinearAlgebra
 
 indices(n, d) = n == 1 ? [d] : [[i; xs] for i in 0:d for xs in indices(n - 1, d - i)]
 
-function isboundary(xs)
+function pair_atleast(xs, k)
     n = length(xs)
-    d = sum(xs)
-    any(i -> xs[i] + xs[mod1(i + 1, n)] == d, 1:n)
+    any(i -> xs[i] + xs[mod1(i + 1, n)] >= k, 1:n)
 end
+
+isboundary(xs) = pair_atleast(xs, sum(xs))
+
+isribbon(xs) = pair_atleast(xs, sum(xs) - 1)
 
 function neighbors(xs)
     n = length(xs)
@@ -17,8 +20,6 @@ function neighbors(xs)
     valid(ys) = all(y -> y >= 0, ys)
     filter(valid, [[step(i, 1) for i in 1:n]; [step(i, -1) for i in 1:n]])
 end
-
-isribbon(xs) = any(isboundary, neighbors(xs))
 
 function harmonic_mask(xs)
     neigs = neighbors(xs)
@@ -35,6 +36,12 @@ function biharmonic_mask(xs)
         end
     end
     result
+end
+
+function set_g1_continuity!(cnet)
+    # TODO
+    # atszamolja eloszor a GB-tipusu ribbont Bezier-haromszoggel valo kapcsolodasra,
+    # es a Bezier-haromszog sikjai alapjan beallitja a G1 folytonossagot
 end
 
 function optimize_controlnet!(cnet; g1 = true)
@@ -260,6 +267,7 @@ end
 
 function spatch_test(name, resolution, g1_continuity = true)
     cnet = readGBP("$name.gbp")
+    g1_continuity && set_g1_continuity!(cnet)
     optimize_controlnet!(cnet, g1 = g1_continuity)
     write_surface(cnet, "$name.obj", resolution)
     write_cnet(cnet, "$name-cnet.obj")

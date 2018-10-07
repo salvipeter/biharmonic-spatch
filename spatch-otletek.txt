@@ -1,3 +1,5 @@
+Biharmonic S-patches
+
 Introduction [0.5]:
 - az S-patch egy matematikailag gyonyoru megoldas egy fontos problemara, blabla...
 - ... de a rengeteg kontrollponttal kezelhetetlen
@@ -5,11 +7,15 @@ Introduction [0.5]:
 
 Previous work [0.5]:
 - Farin-fele diszkret Coons-patch otlet: egy lokalis maszkot alkalmazunk a kontrollhalora, amitol a felulet (is) harmonikus / minimalis lesz (de ld. Monterde, aki megmutatja, hogy ennyire nem egyszeru a helyzet)
-- a belso pontok beallitasara adodik a baricentrikus koordinatak alapjan egy szimpla modszer, de ez csak a sarkokat veszi figyelembe (lehet, hogy ezt be se kell irni...)
-- Kosinka-fele beallitasa a szelso kontrollpontoknak a G1-hez
-- a 90-es S-patch cikkben leirt G1-beallitas
-- a 90-es S-patch cikkben leirt Sabin-netes default poziciokkal valo osszehasonlitas (???)
+- Kosinka-fele beallitasa a szelso kontrollpontoknak a G1-hez + belseje
+  => csak cubic
+     ok is valami konvex kombinaciot hasznalnak a belso pontokra, de nincs reszletezve
+- a 90-es S-patch cikkben leirt G1-beallitas es default belso beallitas
+  => bonyolult, es csak masod- es harmadfoku
 - transzfinit es GB patchekkel valo osszehasonlitas
+  => transzfinittel szemben tobb DoF, de a GB patchnel bonyolultabb
+  => a GB patchnel magasabb fokszam/oldalszam eseten a sulyok nem a legjobbak,
+     rosszabb approximaciora?
 
 Preliminaries [1]:
 - az S-patch leirasa
@@ -36,6 +42,7 @@ Generalized Masks [1]:
 
 Examples [0.5]:
 - meggyozo kepek (konkav eset? - osszehasonlitas Schaefer-rel)
+- default patch minoseg-osszehasonlitas a GB patch-el
 
 Conclusion + Bibliography [0.5]:
 - Loop-DeRose '89 [A multisided generalization of Bézier surfaces]
