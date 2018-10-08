@@ -170,8 +170,8 @@ The parameter `tolerance` controls the minimum valid distance from a corner.
 function barycentric(poly, p; barycentric_type = :wachspress, tolerance = 1.0e-5)
     vectors = map(x -> p - x, poly)
     n = length(poly)
-    inc = i -> mod(i, n) + 1
-    dec = i -> mod(i - 2, n) + 1
+    inc = i -> mod1(i + 1, n)
+    dec = i -> mod1(i - 1, n)
     area = i -> det([vectors[i] vectors[inc(i)]]) / 2
     area_product = exceptions -> mapreduce(area, *, setdiff(1:n, exceptions))
     f = Dict(:wachspress => x -> 1, :meanvalue => x -> norm(x), :harmonic => x -> norm(x)^2)
@@ -389,83 +389,45 @@ function set_panels!(surf)
 end
 
 """
-    g1normals(ribbons, i)
-
-Returns an array of the normals the G1 boundary panels should have
-to have the same cross-derivative properties as the GB patch `ribbons`
-on the `i`-th side. This is computed by generating the second control
-row of a connecting Bezier triangle.
-
-Note that `i` is between `0` and `n-1`.
-"""
-function g1normals(ribbons, i)
-    result = []
-    function add_normal!(j, p)
-        o = ribbons[i,j,0]
-        q = ribbons[i,j+1,0]
-        push!(result, normalize!(cross(q - o, p - o)))
-    end
-    d = ribbons.d
-    prev = ribbons[i,0,1]
-    add_normal!(0, prev)
-    for j in 1:d-1
-        c = j / d
-        mid = affine_combine(ribbons[i,j,0], c, ribbons[i,j-1,0])
-        next = (ribbons[i,j,1] - ribbons[i,j,0] - c * prev + mid) / (1 - c)
-        add_normal!(j, next)
-        prev = next
-    end
-    result
-end
-
-"""
-    panel_leg(surf, normal, i, j)
-
-Computes the non-boundary point required by `set_panels!` for
-the `j`-th panel on side `i` (interpreted as in `panel_indices`).
-
-This works by taking the leg of the leftmost and rightmost panels
-(both of which are determined by the boundary), and computing a
-linear interpolation of the deviation vectors. The generated
-panel is guaranteed to be in the plane defined by the `normal` vector.
-"""
-function panel_leg(surf, normal, i, j)
-    n, d = surf.n, surf.d
-    s_1 = make_index(n, (i-1,1), (i,d-1))
-    s0 = make_index(n, (i,d))
-    s1 = make_index(n, (i,d-1), (i+1,1))
-    left_panel = map(si -> surf[si], [s_1, s0, s1])
-    pleft = left_panel[3]
-    pleftleg = affine_image([left_panel; Vector(undef, n - 3)])[4]
-    
-    sd = make_index(n, (i+1,d))
-    sd1 = make_index(n, (i+1,d-1), (i+2,1))
-    pright = surf[sd]
-    prightleg = surf[sd1]
-
-    sj = make_index(n, (i,d-j-1), (i+1,j+1))
-    pcurrent = surf[sj]
-
-    c = j / (d - 1)
-    v = affine_combine(pleftleg - pleft, c, prightleg - pright)
-    pcurrent + v - normal * dot(v, normal)
-end
-
-"""
     set_g1_continuity!(surf, ribbons)
 
 Modifies `surf` to have the same G1 cross-derivative properties
 as the GB patch `ribbons`.
 """
+# function set_g1_continuity!(surf, ribbons)
+#     n, d = surf.n, surf.d
+#     for i in 0:n-1
+#         prev = ribbons[i,d,0] - (ribbons[i,d,1] - ribbons[i,d,0])
+#         for j in 1:d-1
+#             c = j / d
+#             mid = affine_combine(ribbons[i,d-j,0], c, ribbons[i,d-j+1,0])
+#             next = (ribbons[i,d-j,0] - ribbons[i,d-j,1] - c * prev + mid) / (1 - c)
+#             si = make_index(n, (i+1,j), (i+2,d-j-1), (i+3,1))
+#             surf[si] = ribbons[i,d-j,0] - (next - ribbons[i,d-j,0])
+#             prev = next
+#         end
+#     end
+#     set_panels!(surf)
+# end
 function set_g1_continuity!(surf, ribbons)
     n, d = surf.n, surf.d
-    for i in 1:n
-        normals = g1normals(ribbons, i - 1)
-        for j in 1:d
-            si = make_index(n, (i,d-j), (i+1,j-1), (i+2,1))
-            surf[si] = panel_leg(surf, normals[j], i, j - 1)
+    function set_leg!(i, j, p)
+        si = make_index(n, (i+1,d-j-1), (i+2,j), (i+3,1))
+        surf[si] = ribbons[i,j+1,0] - (p - ribbons[i,j,0])
+    end
+    for i in 0:n-1
+        prev = ribbons[i,0,0] - (ribbons[i,0,1] - ribbons[i,0,0])
+        set_leg!(i, 0, prev)
+        for j in 1:d-2
+            c = j / d
+            mid = affine_combine(ribbons[i,j,0], c, ribbons[i,j-1,0])
+            next = (ribbons[i,j,0] - ribbons[i,j,1] - c * prev + mid) / (1 - c)
+            set_leg!(i, j, next)
+            prev = next
         end
     end
+    # Problem: the panels have conflicting conditions
+    # The legs above should be determined such that no conflicts may occur
     set_panels!(surf)
 end
 
@@ -642,6 +604,7 @@ The function outputs several files:
 """
 function spatch_test(name, resolution, g1_continuity = true)
     ribbons = read_ribbons("$name.gbp")
+    @assert ribbons.d > 2 "degree <= 2 is not implemented yet"
     surf = c0_patch(ribbons)
     g1_continuity && set_g1_continuity!(surf, ribbons)
     optimize_controlnet!(surf, g1 = g1_continuity)
