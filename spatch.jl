@@ -6,6 +6,13 @@ using LinearAlgebra
 const Index = Vector{Int}
 const Point = Vector{Float64}
 
+"""
+    SPatch(n, d, cpts)
+
+Represents an S-patch of degree `d` with `n` sides.
+Its control points are stored as a dictionary,
+and can be directly accessed by indexing.
+"""
 struct SPatch
     n :: Int
     d :: Int
@@ -13,8 +20,8 @@ struct SPatch
 end
 
 getindex(s::SPatch, si::Index) = s.cpts[si]
-setindex!(s::SPatch, v::Point, si::Index) = s.cpts[si] = v
-get!(s::SPatch, si::Index, v::Point) = get!(s.cpts, si, v)
+setindex!(s::SPatch, p::Point, si::Index) = s.cpts[si] = p
+get!(s::SPatch, si::Index, p::Point) = get!(s.cpts, si, p)
 
 
 # Control point optimization
@@ -98,8 +105,8 @@ end
 Modifies `surf` by placing its control points to default positions
 computed by biharmonic masks.
 
-If `g1` is true (the default), G1 boundaries are fixed.
-If `g1` is false, only the C0 boundaries are fixed.
+If `g1` is `true` (the default), G1 boundaries are fixed.
+If `g1` is `false`, only the C0 boundaries are fixed.
 """
 function optimize_controlnet!(surf; g1 = true)
     isfixed = g1 ? isribbon : isboundary
@@ -126,12 +133,40 @@ end
 
 # Evaluation
 
-multinomial(xs) = factorial(sum(xs)) ÷ prod(map(factorial, xs))
+"""
+    multinomial(si)
 
-bernstein(xs, bc) = multinomial(xs) * prod(map(^, bc, xs))
+The multinomial value of `sum(si)` over the elements of `si`.
+"""
+multinomial(si) = factorial(sum(si)) ÷ prod(map(factorial, si))
 
+"""
+    bernstein(si, bc)
+
+The Bernstein polynomial associated with `si` evaluated at
+the barycentric coordinates `bc`.
+"""
+bernstein(si, bc) = multinomial(si) * prod(map(^, bc, si))
+
+"""
+    regularpoly(n)
+
+A regular `n`-gon on the unit circle, consisting of an array of points.
+"""
 regularpoly(n) = [[cos(a), sin(a)] for a in range(0.0, length=n+1, stop=2pi)][1:n]
 
+"""
+    barycentric(poly, p; barycentric_type, tolerance)
+
+The barycentric coordinates of `p` inside the polygon `poly`.
+
+The coordinate type `barycentric_type` can be
+- :wachspress (Wachspress coordinates)
+- :meanvalue (Mean value coordinates)
+- :harmonic (Discrete harmonic coordinates)
+
+The parameter `tolerance` controls the minimum valid distance from a corner.
+"""
 function barycentric(poly, p; barycentric_type = :wachspress, tolerance = 1.0e-5)
     vectors = map(x -> p - x, poly)
     n = length(poly)
@@ -155,7 +190,12 @@ function barycentric(poly, p; barycentric_type = :wachspress, tolerance = 1.0e-5
     map(wi -> wi / wsum, w)
 end
 
-function eval_one(poly, surf, p)
+"""
+    eval_one(surf, poly, p)
+
+Evaluates the S-patch `surf` at domain point `p` inside the domain polygon `poly`.
+"""
+function eval_one(surf, poly, p)
     result = [0, 0, 0]
     bc = barycentric(poly, p)
     for (i, q) in surf.cpts
@@ -164,8 +204,20 @@ function eval_one(poly, surf, p)
     result
 end
 
+"""
+    affine_combine(p, x, q)
+
+Computes the linear combination between `p` and `q` at ratio `x`.
+"""
 affine_combine(p, x, q) = p * (1 - x) + q * x
 
+"""
+    vertices(poly, resolution)
+
+An array of vertices sampled from the inside and boundary of `poly`.
+The points are taken in a way similar to a spider's web,
+with `resolution + 1` points at the boundaries.
+"""
 function vertices(poly, resolution)
     n = length(poly)
     lines = [(poly[mod1(i-1,n)], poly[i]) for i in 1:n]
@@ -181,6 +233,12 @@ function vertices(poly, resolution)
     result
 end
 
+"""
+    triangles(n, resolution)
+
+An array of index-triples connecting the points of the output of `vertices`
+into a consistent triangulation.
+"""
 function triangles(n, resolution)
     result = []
     inner_start = 1
@@ -206,9 +264,15 @@ function triangles(n, resolution)
     result
 end
 
+"""
+    eval_all(surf, resolution)
+
+Evaluates the S-patch `surf` at a given `resolution` (interpreted as in `vertices`),
+and returns a pair of arrays (vertices, triangles).
+"""
 function eval_all(surf, resolution)
     poly = regularpoly(surf.n)
-    ([eval_one(poly, surf, p) for p in vertices(poly, resolution)],
+    ([eval_one(surf, poly, p) for p in vertices(poly, resolution)],
      triangles(surf.n, resolution))
 end
 
@@ -217,6 +281,13 @@ end
 
 const GBIndex = NTuple{3, Int}
 
+"""
+    BezierPatch(n, d, cpts)
+
+Represents a GB-patch of degree `d` with `n` sides.
+Its control points are stored as a dictionary,
+and can be directly accessed by indexing.
+"""
 struct BezierPatch
     n :: Int
     d :: Int
@@ -228,20 +299,34 @@ getindex(s::BezierPatch, i::Int, j::Int, k::Int) = s.cpts[i,j,k]
 setindex!(s::BezierPatch, v::Point, idx::GBIndex) = s.cpts[idx] = v
 setindex!(s::BezierPatch, v::Point, i::Int, j::Int, k::Int) = s.cpts[i,j,k] = v
 
+"""
+    make_index(n, pairs...)
+
+Creates an index of length `n`, with non-zero elements at specified places.
+
+    julia> make_index(5, (2,3), (3,1))
+    [0, 3, 1, 0, 0]
+"""
 function make_index(n, pairs...)
-    index = zeros(Int, n)
-    for (i, v) in pairs
-        index[mod1(i,n)] = v
+    si = zeros(Int, n)
+    for (i, x) in pairs
+        si[mod1(i,n)] = x
     end
-    index
+    si
 end
 
+"""
+    c0_patch(ribbons)
+
+Creates an S-patch that has the same C0 boundaries as the given
+GB-patch `ribbons`. All inner control points are undefined.
+"""
 function c0_patch(ribbons)
     n, d = ribbons.n, ribbons.d
     result = SPatch(n, d, Dict())
     for i in 0:n-1, j in 0:d
-        index = make_index(n, (i+1,d-j), (i+2,j))
-        result[index] = ribbons[i,j,0]
+        si = make_index(n, (i+1,d-j), (i+2,j))
+        result[si] = ribbons[i,j,0]
     end
     result
 end
@@ -249,6 +334,13 @@ end
 
 # G1 ribbon computation
 
+"""
+    affine_image(points)
+
+Takes an array of n 3D points, and returns another
+that is the affine image of a regular n-gon,
+with the first 3 points being unchanged.
+"""
 function affine_image(points)
     poly = regularpoly(length(points))
     A = [poly[1]' 1; poly[2]' 1; poly[3]' 1]
@@ -257,34 +349,63 @@ function affine_image(points)
     map(p -> M * [p; 1], poly)
 end
 
+"""
+    panel_indices(n, d, i, j)
+
+Gives the indices of a G1 boundary panel in an `n`-sided S-patch
+of degree `d`.
+
+This is the `j`-th panel is on the `i`-th side,
+i.e., on the side where the endpoints have indices
+with a non-zero element on the `i`-th and `(i+1)`-th position.
+
+Note that `i` is between `1` and `n`, while `j` is between `0` and `d-1`.
+"""
 function panel_indices(n, d, i, j)
-    index = make_index(n, (i,d-j), (i+1,j))
+    si = make_index(n, (i,d-j), (i+1,j))
     map(1:n) do j
-        result = copy(index)
-        index[mod1(i+j-1, n)] -= 1
-        index[mod1(i+j, n)] += 1
+        result = copy(si)
+        si[mod1(i+j-1, n)] -= 1
+        si[mod1(i+j, n)] += 1
         result
     end
 end
 
+"""
+    set_panels!(surf)
+
+Modifies `surf` by setting its G1 boundary panels to be the
+affine image of a regular n-sided polygon.
+It is assumed that the first three points (the two on the boundary,
+and the one with the index pattern ...0XY010...) of each panel is already set.
+"""
 function set_panels!(surf)
     n, d = surf.n, surf.d
     for i in 1:n, j in 0:d-1
-        idxs = panel_indices(n, d, i, j)
-        points = affine_image(map(idx -> get!(surf, idx, Point()), idxs))
-        foreach((idx, p) -> surf[idx] = p, idxs, points)
+        panel = panel_indices(n, d, i, j)
+        points = affine_image(map(si -> get!(surf, si, Point()), panel))
+        foreach((si, p) -> surf[si] = p, panel, points)
     end
 end
 
+"""
+    g1normals(ribbons, i)
+
+Returns an array of the normals the G1 boundary panels should have
+to have the same cross-derivative properties as the GB patch `ribbons`
+on the `i`-th side. This is computed by generating the second control
+row of a connecting Bezier triangle.
+
+Note that `i` is between `0` and `n-1`.
+"""
 function g1normals(ribbons, i)
-    i -= 1
-    d = ribbons.d
     result = []
     function add_normal!(j, p)
         o = ribbons[i,j,0]
         q = ribbons[i,j+1,0]
         push!(result, normalize!(cross(q - o, p - o)))
     end
+    d = ribbons.d
     prev = ribbons[i,0,1]
     add_normal!(0, prev)
     for j in 1:d-1
@@ -297,35 +418,52 @@ function g1normals(ribbons, i)
     result
 end
 
+"""
+    panel_leg(surf, normal, i, j)
+
+Computes the non-boundary point required by `set_panels!` for
+the `j`-th panel on side `i` (interpreted as in `panel_indices`).
+
+This works by taking the leg of the leftmost and rightmost panels
+(both of which are determined by the boundary), and computing a
+linear interpolation of the deviation vectors. The generated
+panel is guaranteed to be in the plane defined by the `normal` vector.
+"""
 function panel_leg(surf, normal, i, j)
     n, d = surf.n, surf.d
-    left_corner = make_index(n, (i,d))
-    left = make_index(n, (i-1,1), (i,d-1))
-    right = make_index(n, (i,d-1), (i+1,1))
-    left_panel = map(idx -> surf[idx], [left, left_corner, right])
+    s_1 = make_index(n, (i-1,1), (i,d-1))
+    s0 = make_index(n, (i,d))
+    s1 = make_index(n, (i,d-1), (i+1,1))
+    left_panel = map(si -> surf[si], [s_1, s0, s1])
     pleft = left_panel[3]
     pleftleg = affine_image([left_panel; Vector(undef, n - 3)])[4]
     
-    right_corner = make_index(n, (i+1,d))
-    right_leg = make_index(n, (i+1,d-1), (i+2,1))
-    pright = surf[right_corner]
-    prightleg = surf[right_leg]
+    sd = make_index(n, (i+1,d))
+    sd1 = make_index(n, (i+1,d-1), (i+2,1))
+    pright = surf[sd]
+    prightleg = surf[sd1]
 
-    current = make_index(n, (i,d-j), (i+1,j))
-    pcurrent = surf[current]
+    sj = make_index(n, (i,d-j-1), (i+1,j+1))
+    pcurrent = surf[sj]
 
-    c = (j - 1) / (d - 1)
+    c = j / (d - 1)
     v = affine_combine(pleftleg - pleft, c, prightleg - pright)
     pcurrent + v - normal * dot(v, normal)
 end
 
+"""
+    set_g1_continuity!(surf, ribbons)
+
+Modifies `surf` to have the same G1 cross-derivative properties
+as the GB patch `ribbons`.
+"""
 function set_g1_continuity!(surf, ribbons)
     n, d = surf.n, surf.d
     for i in 1:n
-        normals = g1normals(ribbons, i)
+        normals = g1normals(ribbons, i - 1)
         for j in 1:d
-            index = make_index(n, (i,d-j), (i+1,j-1), (i+2,1))
-            surf[index] = panel_leg(surf, normals[j], i, j)
+            si = make_index(n, (i,d-j), (i+1,j-1), (i+2,1))
+            surf[si] = panel_leg(surf, normals[j], i, j - 1)
         end
     end
     set_panels!(surf)
@@ -334,6 +472,15 @@ end
 
 # Output
 
+"""
+    write_cnet(surf, filename; g1, only_fixed)
+
+Writes the control network of the S-patch `surf` into a Wavefront Object file
+designated by `filename`. If `only_fixed` is `true`, it only writes
+the control points associated with the boundary constraints -
+the boundary curves, when `g1` is `false`, and the boundary panels,
+when `g1` is `true`.
+"""
 function write_cnet(surf, filename; g1 = true, only_fixed = false)
     isfixed = g1 ? isribbon : isboundary
     mapping = Dict(map(p -> (p[2], p[1]), enumerate(keys(surf.cpts))))
@@ -353,6 +500,12 @@ function write_cnet(surf, filename; g1 = true, only_fixed = false)
     end
 end
 
+"""
+    writeOBJ(verts, tris, filename)
+
+Writes the mesh defined by vertices `verts` and triangles `tris`
+into the Wavefront Object file designated by `filename`.
+"""
 function writeOBJ(verts, tris, filename)
     open(filename, "w") do f
         for v in verts
@@ -364,6 +517,12 @@ function writeOBJ(verts, tris, filename)
     end
 end
 
+"""
+    write_surface(surf, filename, resolution)
+
+Writes the S-patch `surf` into a Wavefront Object file designated by
+`filename` with sampling rate `resolution` (interpreted as in `vertices`).
+"""
 function write_surface(surf, filename, resolution)
     vs, ts = eval_all(surf, resolution)
     writeOBJ(vs, ts, filename)
@@ -372,6 +531,11 @@ end
 
 # Bezier ribbon I/O & evaluation
 
+"""
+    read_ribbons(filename)
+
+Reads a GB-patch from a GBP file designated by `filename`.
+"""
 function read_ribbons(filename)
     read_numbers(f, numtype) = map(s -> parse(numtype, s), split(readline(f)))
     local result
@@ -381,9 +545,7 @@ function read_ribbons(filename)
         l = Int(floor(d + 1) / 2)
         cp = 1 + Int(floor(d / 2))
         cp = n * cp * l + 1
-        side = 0
-        col = 0
-        row = 0
+        side, col, row = 0, 0, 0
         readline(f)
         for i in 1:cp-1
             if col >= d - row
@@ -407,11 +569,17 @@ function read_ribbons(filename)
     result
 end
 
+"""
+    write_ribbon(ribbons, filename, index, resolution)
+
+Write the `index`-th ribbon of the GB-patch `ribbons` into the Wavefront Object
+file designated by `filename`, with `resolution` x `resolution` sampled points.
+"""
 function write_ribbon(ribbons, filename, index, resolution)
-    d = ribbons.d
     bezier(n, k, x) = binomial(n, k) * x ^ k * (1 - x) ^ (n - k)
     samples = [[u, v] for u in range(0.0, stop=1.0, length=resolution)
                       for v in range(0.0, stop=1.0, length=resolution)]
+    d = ribbons.d
     verts = map(samples) do p
         result = [0, 0, 0]
         for i in 0:d, j in 0:1
@@ -428,8 +596,13 @@ function write_ribbon(ribbons, filename, index, resolution)
     writeOBJ(verts, tris, filename)
 end
 
+"""
+    write_bezier_cnet(ribbons, filename)
+
+Writes the ribbon structure of the GB-patch `ribbons` into the
+Wavefront Object file designated by `filename`.
+"""
 function write_bezier_cnet(ribbons, filename)
-    n, d = ribbons.n, ribbons.d
     g1 = filter(idx -> idx[3] <= 1, keys(ribbons.cpts))
     mapping = Dict(map(p -> (p[2], p[1]), enumerate(g1)))
     open(filename, "w") do f
@@ -452,6 +625,21 @@ end
 
 # Main function
 
+"""
+    spatch_test(name, resolution, [g1_continuity])
+
+Reads a GB patch from the file `name`.gbp, and computes an S-patch
+with the same boundary, and optimized inner control points.
+
+When `g1_continuity` is `true` (the default), the resulting S-patch
+will have the same normal sweep at its boundaries as the GB patch.
+
+The function outputs several files:
+- `name`.obj [the S-patch surface]
+- `name`-cnet.obj [the full S-patch control net]
+- `name`-ribbon.obj [the fixed boundary part of the S-patch control net]
+- `name`-bezier-cnet.obj [the original GB ribbons]
+"""
 function spatch_test(name, resolution, g1_continuity = true)
     ribbons = read_ribbons("$name.gbp")
     surf = c0_patch(ribbons)
