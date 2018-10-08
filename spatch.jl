@@ -1,64 +1,125 @@
+module BiharmonicSPatch
+
+import Base: getindex, setindex!, get!
 using LinearAlgebra
 
-indices(n, d) = n == 1 ? [d] : [[i; xs] for i in 0:d for xs in indices(n - 1, d - i)]
+const Index = Vector{Int}
+const Point = Vector{Float64}
 
-function pair_atleast(xs, k)
-    n = length(xs)
-    any(i -> xs[i] + xs[mod1(i + 1, n)] >= k, 1:n)
+struct SPatch
+    n :: Int
+    d :: Int
+    cpts :: Dict{Index,Point}
 end
 
-isboundary(xs) = pair_atleast(xs, sum(xs))
+getindex(s::SPatch, si::Index) = s.cpts[si]
+setindex!(s::SPatch, v::Point, si::Index) = s.cpts[si] = v
+get!(s::SPatch, si::Index, v::Point) = get!(s.cpts, si, v)
 
-isribbon(xs) = pair_atleast(xs, sum(xs) - 1)
+
+# Control point optimization
 
-function neighbors(xs)
-    n = length(xs)
+"""
+    indices(n, d)
+
+All possible indices of an S-patch with `n` sides and degree `d`.
+"""
+indices(n, d) = n == 1 ? [d] : [[i; si] for i in 0:d for si in indices(n - 1, d - i)]
+
+"""
+    pair_atleast(si, k)
+
+Returns if there are two consecutive elements in `si` whose sum is at least `k`.
+"""
+function pair_atleast(si, k)
+    n = length(si)
+    any(i -> si[i] + si[mod1(i + 1, n)] >= k, 1:n)
+end
+
+"""
+    isboundary(si)
+
+Returns if the control point with index `si` is part of the C0 boundary.
+"""
+isboundary(si) = pair_atleast(si, sum(si))
+
+"""
+    isribbon(si)
+
+Returns if the control point with index `si` is part of the G1 boundary.
+"""
+isribbon(si) = pair_atleast(si, sum(si) - 1)
+
+"""
+    neighbors(si)
+
+An array of all neighbors of `si`.
+"""
+function neighbors(si)
+    n = length(si)
     function step(i, dir)
         j = mod1(i + dir, n)
-        [k == i ? x - 1 : (k == j ? x + 1 : x) for (k, x) in enumerate(xs)]
+        [k == i ? x - 1 : (k == j ? x + 1 : x) for (k, x) in enumerate(si)]
     end
-    valid(ys) = all(y -> y >= 0, ys)
+    valid(sj) = all(x -> x >= 0, sj)
     filter(valid, [[step(i, 1) for i in 1:n]; [step(i, -1) for i in 1:n]])
 end
 
-function harmonic_mask(xs)
-    neigs = neighbors(xs)
-    result = Dict(xs => -length(neigs))
-    foreach(neig -> result[neig] = 1, neigs)
+"""
+    harmonic_mask(si)
+
+Returns the harmonic mask as a dictionary.
+"""
+function harmonic_mask(si)
+    neigs = neighbors(si)
+    result = Dict(si => -length(neigs))
+    foreach(sj -> result[sj] = 1, neigs)
     result
 end
 
-function biharmonic_mask(xs)
-    result = Dict{Vector{Int},Int}()
-    for (ys, weight) in harmonic_mask(xs)
-        for (p, w) in harmonic_mask(ys)
-            result[p] = get!(result, p, 0) + w * weight
+"""
+    biharmonic_mask(si)
+
+Returns the biharmonic mask as a dictionary.
+"""
+function biharmonic_mask(si)
+    result = Dict{Index,Int}()
+    for (sj, wj) in harmonic_mask(si)
+        for (sk, wk) in harmonic_mask(sj)
+            result[sk] = get!(result, sk, 0) + wk * wj
         end
     end
     result
 end
 
-function optimize_controlnet!(cnet; g1 = true)
+"""
+    optimize_controlnet!(surf; g1)
+
+Modifies `surf` by placing its control points to default positions
+computed by biharmonic masks.
+
+If `g1` is true (the default), G1 boundaries are fixed.
+If `g1` is false, only the C0 boundaries are fixed.
+"""
+function optimize_controlnet!(surf; g1 = true)
     isfixed = g1 ? isribbon : isboundary
-    n = length(first(keys(cnet)))
-    d = sum(first(keys(cnet)))
-    movable = filter(i -> !isfixed(i), indices(n, d))
+    movable = filter(i -> !isfixed(i), indices(surf.n, surf.d))
     mapping = Dict(map(p -> (p[2], p[1]), enumerate(movable)))
     m = length(movable)
     A = zeros(m, m)
     b = zeros(m, 3)
-    for (i, p) in enumerate(movable)
-        for (q, w) in biharmonic_mask(p)
-            if isfixed(q)
-                b[i,1:end] -= cnet[q] * w
+    for (i, si) in enumerate(movable)
+        for (sj, wj) in biharmonic_mask(si)
+            if isfixed(sj)
+                b[i,1:end] -= surf[sj] * wj
             else
-                A[i,mapping[q]] = w
+                A[i,mapping[sj]] = wj
             end
         end
     end
     x = A \ b
-    for (i, p) in enumerate(movable)
-        cnet[p] = x[i,1:end]
+    for (i, si) in enumerate(movable)
+        surf[si] = x[i,1:end]
     end
 end
 
@@ -94,10 +155,10 @@ function barycentric(poly, p; barycentric_type = :wachspress, tolerance = 1.0e-5
     map(wi -> wi / wsum, w)
 end
 
-function eval_one(poly, cnet, p)
+function eval_one(poly, surf, p)
     result = [0, 0, 0]
     bc = barycentric(poly, p)
-    for (i, q) in cnet
+    for (i, q) in surf.cpts
         result += q * bernstein(i, bc)
     end
     result
@@ -145,15 +206,27 @@ function triangles(n, resolution)
     result
 end
 
-function eval_all(cnet, resolution)
-    n = length(first(keys(cnet)))
-    poly = regularpoly(n)
-    ([eval_one(poly, cnet, p) for p in vertices(poly, resolution)],
-     triangles(n, resolution))
+function eval_all(surf, resolution)
+    poly = regularpoly(surf.n)
+    ([eval_one(poly, surf, p) for p in vertices(poly, resolution)],
+     triangles(surf.n, resolution))
 end
 
 
 # C0 ribbon computation
+
+const GBIndex = NTuple{3, Int}
+
+struct BezierPatch
+    n :: Int
+    d :: Int
+    cpts :: Dict{GBIndex,Point}
+end
+
+getindex(s::BezierPatch, idx::GBIndex) = s.cpts[idx]
+getindex(s::BezierPatch, i::Int, j::Int, k::Int) = s.cpts[i,j,k]
+setindex!(s::BezierPatch, v::Point, idx::GBIndex) = s.cpts[idx] = v
+setindex!(s::BezierPatch, v::Point, i::Int, j::Int, k::Int) = s.cpts[i,j,k] = v
 
 function make_index(n, pairs...)
     index = zeros(Int, n)
@@ -164,9 +237,8 @@ function make_index(n, pairs...)
 end
 
 function c0_patch(ribbons)
-    result = Dict{Vector{Int},Vector{Float64}}()
-    n = maximum(map(x -> x[1], collect(keys(ribbons)))) + 1
-    d = maximum(map(x -> x[2], collect(keys(ribbons))))
+    n, d = ribbons.n, ribbons.d
+    result = SPatch(n, d, Dict())
     for i in 0:n-1, j in 0:d
         index = make_index(n, (i+1,d-j), (i+2,j))
         result[index] = ribbons[i,j,0]
@@ -195,19 +267,18 @@ function panel_indices(n, d, i, j)
     end
 end
 
-function set_panels!(cnet)
-    n = length(first(keys(cnet)))
-    d = sum(first(keys(cnet)))
+function set_panels!(surf)
+    n, d = surf.n, surf.d
     for i in 1:n, j in 0:d-1
         idxs = panel_indices(n, d, i, j)
-        points = affine_image(map(idx -> get!(cnet, idx, []), idxs))
-        foreach((idx, p) -> cnet[idx] = p, idxs, points)
+        points = affine_image(map(idx -> get!(surf, idx, Point()), idxs))
+        foreach((idx, p) -> surf[idx] = p, idxs, points)
     end
 end
 
 function g1normals(ribbons, i)
     i -= 1
-    d = maximum(map(x -> x[2], collect(keys(ribbons))))
+    d = ribbons.d
     result = []
     function add_normal!(j, p)
         o = ribbons[i,j,0]
@@ -226,53 +297,51 @@ function g1normals(ribbons, i)
     result
 end
 
-function panel_leg(cnet, normal, i, j)
-    n = length(first(keys(cnet)))
-    d = sum(first(keys(cnet)))
+function panel_leg(surf, normal, i, j)
+    n, d = surf.n, surf.d
     left_corner = make_index(n, (i,d))
     left = make_index(n, (i-1,1), (i,d-1))
     right = make_index(n, (i,d-1), (i+1,1))
-    left_panel = map(idx -> cnet[idx], [left, left_corner, right])
+    left_panel = map(idx -> surf[idx], [left, left_corner, right])
     pleft = left_panel[3]
     pleftleg = affine_image([left_panel; Vector(undef, n - 3)])[4]
     
     right_corner = make_index(n, (i+1,d))
     right_leg = make_index(n, (i+1,d-1), (i+2,1))
-    pright = cnet[right_corner]
-    prightleg = cnet[right_leg]
+    pright = surf[right_corner]
+    prightleg = surf[right_leg]
 
     current = make_index(n, (i,d-j), (i+1,j))
-    pcurrent = cnet[current]
+    pcurrent = surf[current]
 
     c = (j - 1) / (d - 1)
     v = affine_combine(pleftleg - pleft, c, prightleg - pright)
     pcurrent + v - normal * dot(v, normal)
 end
 
-function set_g1_continuity!(cnet, ribbons)
-    n = length(first(keys(cnet)))
-    d = sum(first(keys(cnet)))
+function set_g1_continuity!(surf, ribbons)
+    n, d = surf.n, surf.d
     for i in 1:n
         normals = g1normals(ribbons, i)
         for j in 1:d
             index = make_index(n, (i,d-j), (i+1,j-1), (i+2,1))
-            cnet[index] = panel_leg(cnet, normals[j], i, j)
+            surf[index] = panel_leg(surf, normals[j], i, j)
         end
     end
-    set_panels!(cnet)
+    set_panels!(surf)
 end
 
 
 # Output
 
-function write_cnet(cnet, filename; g1 = true, only_fixed = false)
+function write_cnet(surf, filename; g1 = true, only_fixed = false)
     isfixed = g1 ? isribbon : isboundary
-    mapping = Dict(map(p -> (p[2], p[1]), enumerate(keys(cnet))))
+    mapping = Dict(map(p -> (p[2], p[1]), enumerate(keys(surf.cpts))))
     open(filename, "w") do f
-        for p in values(cnet)
+        for p in values(surf.cpts)
             println(f, "v $(p[1]) $(p[2]) $(p[3])")
         end
-        for i in keys(cnet)
+        for i in keys(surf.cpts)
             only_fixed && !isfixed(i) && continue
             from = mapping[i]
             for j in neighbors(i)
@@ -295,8 +364,8 @@ function writeOBJ(verts, tris, filename)
     end
 end
 
-function write_surface(cnet, filename, resolution)
-    vs, ts = eval_all(cnet, resolution)
+function write_surface(surf, filename, resolution)
+    vs, ts = eval_all(surf, resolution)
     writeOBJ(vs, ts, filename)
 end
 
@@ -305,9 +374,10 @@ end
 
 function read_ribbons(filename)
     read_numbers(f, numtype) = map(s -> parse(numtype, s), split(readline(f)))
-    result = Dict{Tuple{Int,Int,Int},Vector{Float64}}()
+    local result
     open(filename) do f
         n, d = read_numbers(f, Int)
+        result = BezierPatch(n, d, Dict())
         l = Int(floor(d + 1) / 2)
         cp = 1 + Int(floor(d / 2))
         cp = n * cp * l + 1
@@ -338,7 +408,7 @@ function read_ribbons(filename)
 end
 
 function write_ribbon(ribbons, filename, index, resolution)
-    d = maximum(map(x -> x[2], collect(keys(ribbons))))
+    d = ribbons.d
     bezier(n, k, x) = binomial(n, k) * x ^ k * (1 - x) ^ (n - k)
     samples = [[u, v] for u in range(0.0, stop=1.0, length=resolution)
                       for v in range(0.0, stop=1.0, length=resolution)]
@@ -359,9 +429,8 @@ function write_ribbon(ribbons, filename, index, resolution)
 end
 
 function write_bezier_cnet(ribbons, filename)
-    n = maximum(map(x -> x[1], collect(keys(ribbons))))
-    d = maximum(map(x -> x[2], collect(keys(ribbons))))
-    g1 = filter(idx -> idx[3] <= 1, keys(ribbons))
+    n, d = ribbons.n, ribbons.d
+    g1 = filter(idx -> idx[3] <= 1, keys(ribbons.cpts))
     mapping = Dict(map(p -> (p[2], p[1]), enumerate(g1)))
     open(filename, "w") do f
         for idx in g1
@@ -385,11 +454,13 @@ end
 
 function spatch_test(name, resolution, g1_continuity = true)
     ribbons = read_ribbons("$name.gbp")
-    cnet = c0_patch(ribbons)
-    g1_continuity && set_g1_continuity!(cnet, ribbons)
-    optimize_controlnet!(cnet, g1 = g1_continuity)
-    write_surface(cnet, "$name.obj", resolution)
-    write_cnet(cnet, "$name-cnet.obj")
-    write_cnet(cnet, "$name-ribbon.obj", g1 = g1_continuity, only_fixed = true)
+    surf = c0_patch(ribbons)
+    g1_continuity && set_g1_continuity!(surf, ribbons)
+    optimize_controlnet!(surf, g1 = g1_continuity)
+    write_surface(surf, "$name.obj", resolution)
+    write_cnet(surf, "$name-cnet.obj")
+    write_cnet(surf, "$name-ribbon.obj", g1 = g1_continuity, only_fixed = true)
     g1_continuity && write_bezier_cnet(ribbons, "$name-bezier-cnet.obj")
 end
+
+end # module
