@@ -79,9 +79,9 @@ Returns the harmonic mask as a dictionary.
 """
 function harmonic_mask(si)
     neigs = neighbors(si)
-    result = Dict(si => -length(neigs))
-    foreach(sj -> result[sj] = 1, neigs)
-    result
+    mask = Dict(si => -length(neigs))
+    foreach(sj -> mask[sj] = 1, neigs)
+    mask
 end
 
 """
@@ -90,13 +90,13 @@ end
 Returns the biharmonic mask as a dictionary.
 """
 function biharmonic_mask(si)
-    result = Dict{Index,Int}()
+    mask = Dict{Index,Int}()
     for (sj, wj) in harmonic_mask(si)
         for (sk, wk) in harmonic_mask(sj)
-            result[sk] = get!(result, sk, 0) + wk * wj
+            mask[sk] = get!(mask, sk, 0) + wk * wj
         end
     end
-    result
+    mask
 end
 
 """
@@ -181,9 +181,9 @@ function barycentric(poly, p; barycentric_type = :wachspress, tolerance = 1.0e-5
     r = map(f[barycentric_type], vectors)
     corner = findfirst(x -> x < tolerance, r)
     if corner != nothing
-        result = fill(0, n)
-        result[corner] = 1
-        return result
+        bc = zeros(n)
+        bc[corner] = 1
+        return bc
     end
     w = [r[dec(i)] * a[dec(i)] + r[inc(i)] * a[i] - r[i] * b[i] * a2[i] for i = 1:n]
     wsum = sum(w)
@@ -323,12 +323,12 @@ GB-patch `ribbons`. All inner control points are undefined.
 """
 function c0_patch(ribbons)
     n, d = ribbons.n, ribbons.d
-    result = SPatch(n, d, Dict())
+    surf = SPatch(n, d, Dict())
     for i in 0:n-1, j in 0:d
         si = make_index(n, (i+1,d-j), (i+2,j))
-        result[si] = ribbons[i,j,0]
+        surf[si] = ribbons[i,j,0]
     end
-    result
+    surf
 end
 
 
@@ -362,11 +362,11 @@ with a non-zero element on the `i`-th and `(i+1)`-th position.
 Note that `i` is between `1` and `n`, while `j` is between `0` and `d-1`.
 """
 function panel_indices(n, d, i, j)
-    si = make_index(n, (i,d-j), (i+1,j))
+    si = make_index(n, (i,d-j-1), (i+1,j+1))
     map(1:n) do j
         result = copy(si)
-        si[mod1(i+j-1, n)] -= 1
-        si[mod1(i+j, n)] += 1
+        si[mod1(i+2-j, n)] -= 1
+        si[mod1(i+1-j, n)] += 1
         result
     end
 end
@@ -376,8 +376,8 @@ end
 
 Modifies `surf` by setting its G1 boundary panels to be the
 affine image of a regular n-sided polygon.
-It is assumed that the first three points (the two on the boundary,
-and the one with the index pattern ...0XY010...) of each panel is already set.
+It is assumed that the first three points (the two on the boundary, and
+the one with the index pattern ...01XY0...) of each panel is already set.
 """
 function set_panels!(surf)
     n, d = surf.n, surf.d
@@ -389,46 +389,85 @@ function set_panels!(surf)
 end
 
 """
-    set_g1_continuity!(surf, ribbons)
+    elevated_points(points)
 
-Modifies `surf` to have the same G1 cross-derivative properties
-as the GB patch `ribbons`.
+Assuming that `points` is the control polygon of a Bezier curve,
+the function returns its degree-elevated version.
 """
-# function set_g1_continuity!(surf, ribbons)
-#     n, d = surf.n, surf.d
-#     for i in 0:n-1
-#         prev = ribbons[i,d,0] - (ribbons[i,d,1] - ribbons[i,d,0])
-#         for j in 1:d-1
-#             c = j / d
-#             mid = affine_combine(ribbons[i,d-j,0], c, ribbons[i,d-j+1,0])
-#             next = (ribbons[i,d-j,0] - ribbons[i,d-j,1] - c * prev + mid) / (1 - c)
-#             si = make_index(n, (i+1,j), (i+2,d-j-1), (i+3,1))
-#             surf[si] = ribbons[i,d-j,0] - (next - ribbons[i,d-j,0])
-#             prev = next
-#         end
-#     end
-#     set_panels!(surf)
-# end
-function set_g1_continuity!(surf, ribbons)
-    n, d = surf.n, surf.d
-    function set_leg!(i, j, p)
-        si = make_index(n, (i+1,d-j-1), (i+2,j), (i+3,1))
-        surf[si] = ribbons[i,j+1,0] - (p - ribbons[i,j,0])
+function elevated_points(points)
+    d = length(points) - 1
+    result = [points[1]]
+    for i in 1:d
+        p = affine_combine(points[i], (d + 1 - i) / (d + 1), points[i+1])
+        push!(result, p)
     end
+    push!(result, points[end])
+    result
+end
+
+"""
+    panel_legs(ribbons, i)
+
+Computes the "legs" of all panels on side `i`, i.e.,
+the deviation vector of the control points of the form
+[...01XY0...] - [...0(X+1)Y0...], in such a way that the
+resulting patch will have the same G1 cross-derivative
+properties as `ribbons` at the same side.
+
+Note that `i` is between `0` and `n-1`.
+"""
+function panel_legs(ribbons, i)
+    n, d = ribbons.n, ribbons.d
+    result = []
+    c = -cos(2pi / n)
+    for k in 0:d+2
+        p = [0.0, 0.0, 0.0]
+        function add_coeff!(lo, hi, scale, du)
+            if lo <= k <= hi
+                j = k - lo
+                v = (du ? ribbons[i,j+1,0] : ribbons[i,j,1]) - ribbons[i,j,0]
+                p += v * scale * binomial(du ? d - 1 : d, j)
+            end
+        end
+        add_coeff!(1, d,     2c,     true)
+        add_coeff!(2, d + 1, 4c,     true)
+        add_coeff!(3, d + 2, 2c,     true)
+        add_coeff!(0, d,     1,      false)
+        add_coeff!(1, d + 1, 2 + 2c, false)
+        add_coeff!(2, d + 2, 1,      false)
+        push!(result, p / binomial(d + 2, k))
+    end
+    result * d / (d + 3)
+end
+
+"""
+    g1_patch(ribbons)
+
+Creates an S-patch that has the same G1 boundaries as the given
+GB-patch `ribbons`. All inner control points are undefined.
+
+The resulting surface will be 3 degrees higher than the GB-patch.
+"""
+function g1_patch(ribbons)
+    n, d = ribbons.n, ribbons.d
+    surf = SPatch(n, d + 3, Dict())
     for i in 0:n-1
-        prev = ribbons[i,0,0] - (ribbons[i,0,1] - ribbons[i,0,0])
-        set_leg!(i, 0, prev)
-        for j in 1:d-2
-            c = j / d
-            mid = affine_combine(ribbons[i,j,0], c, ribbons[i,j-1,0])
-            next = (ribbons[i,j,0] - ribbons[i,j,1] - c * prev + mid) / (1 - c)
-            set_leg!(i, j, next)
-            prev = next
+        points = [ribbons[i,j,0] for j in 0:d]
+        for j in 1:3
+            points = elevated_points(points)
+        end
+        for j in 0:d+3
+            si = make_index(n, (i+1,d+3-j), (i+2,j))
+            surf[si] = points[j+1]
+        end
+        legs = panel_legs(ribbons, i)
+        for j in 1:d+2
+            si = make_index(n, (i,1), (i+1,d+2-j), (i+2,j))
+            surf[si] = points[j+1] + legs[j+1]
         end
     end
-    # Problem: the panels have conflicting conditions
-    # The legs above should be determined such that no conflicts may occur
     set_panels!(surf)
+    surf
 end
 
 
@@ -604,9 +643,7 @@ The function outputs several files:
 """
 function spatch_test(name, resolution, g1_continuity = true)
     ribbons = read_ribbons("$name.gbp")
-    @assert ribbons.d > 2 "degree <= 2 is not implemented yet"
-    surf = c0_patch(ribbons)
-    g1_continuity && set_g1_continuity!(surf, ribbons)
+    surf = g1_continuity ? g1_patch(ribbons) : c0_patch(ribbons)
     optimize_controlnet!(surf, g1 = g1_continuity)
     write_surface(surf, "$name.obj", resolution)
     write_cnet(surf, "$name-cnet.obj")

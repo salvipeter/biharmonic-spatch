@@ -1,4 +1,4 @@
-Biharmonic S-patches
+Practical S-patches
 
 Introduction [0.5]:
 - az S-patch egy matematikailag gyonyoru megoldas egy fontos problemara, blabla...
@@ -11,7 +11,7 @@ Previous work [0.5]:
   => csak cubic
      ok is valami konvex kombinaciot hasznalnak a belso pontokra, de nincs reszletezve
 - a 90-es S-patch cikkben leirt G1-beallitas es default belso beallitas
-  => bonyolult, es csak masod- es harmadfoku
+  => bonyolult, es csak masod- es harmadfoku van jol leirva (kulonosen belso pontok)
 - transzfinit es GB patchekkel valo osszehasonlitas
   => transzfinittel szemben tobb DoF, de a GB patchnel bonyolultabb
   => a GB patchnel magasabb fokszam/oldalszam eseten a sulyok nem a legjobbak,
