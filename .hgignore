@@ -5,3 +5,4 @@ syntax: glob
 *\#
 *.gbp
 *.obj
+*.skd
