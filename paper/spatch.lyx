@@ -1,0 +1,455 @@
+#LyX 2.3 created this file. For more info see http://www.lyx.org/
+\lyxformat 544
+\begin_document
+\begin_header
+\save_transient_properties true
+\origin unavailable
+\textclass kepaf
+\options a4paper,runningheads
+\use_default_options true
+\maintain_unincluded_children false
+\language english
+\language_package default
+\inputencoding auto
+\fontencoding global
+\font_roman "default" "default"
+\font_sans "default" "default"
+\font_typewriter "default" "default"
+\font_math "auto" "auto"
+\font_default_family default
+\use_non_tex_fonts false
+\font_sc false
+\font_osf false
+\font_sf_scale 100 100
+\font_tt_scale 100 100
+\use_microtype false
+\use_dash_ligatures true
+\graphics default
+\default_output_format default
+\output_sync 0
+\bibtex_command default
+\index_command default
+\paperfontsize default
+\spacing single
+\use_hyperref false
+\papersize default
+\use_geometry false
+\use_package amsmath 1
+\use_package amssymb 1
+\use_package cancel 1
+\use_package esint 1
+\use_package mathdots 1
+\use_package mathtools 1
+\use_package mhchem 1
+\use_package stackrel 1
+\use_package stmaryrd 1
+\use_package undertilde 1
+\cite_engine basic
+\cite_engine_type default
+\biblio_style plain
+\use_bibtopic false
+\use_indices false
+\paperorientation portrait
+\suppress_date false
+\justification true
+\use_refstyle 1
+\use_minted 0
+\index Index
+\shortcut idx
+\color #008000
+\end_index
+\secnumdepth 3
+\tocdepth 3
+\paragraph_separation indent
+\paragraph_indentation default
+\is_math_indent 0
+\math_numbering_side default
+\quotes_style english
+\dynamic_quotes 0
+\papercolumns 1
+\papersides 2
+\paperpagestyle default
+\tracking_changes false
+\output_changes false
+\html_math_output 0
+\html_css_as_file 0
+\html_be_strict false
+\end_header
+
+\begin_body
+
+\begin_layout Title
+Practical S-patches for 
+\begin_inset Formula $G^{1}$
+\end_inset
+
+ hole filling
+\end_layout
+
+\begin_layout Running LaTeX Title
+Practical S-patches
+\end_layout
+
+\begin_layout Author
+Péter Salvi
+\end_layout
+
+\begin_layout Author Running
+P.
+ Salvi
+\end_layout
+
+\begin_layout Institute
+Budapest University of Technology and Economics
+\end_layout
+
+\begin_layout Abstract
+S-patches have been around for 30 years, but they are seldom used, and are
+ considered more of a mathematical curiosity than a practical surface representa
+tion.
+ In this article a method is presented for automatically creating S-patches
+ of any degree or any number of sides, suitable for inclusion in a curve
+ network with tangential continuity to the adjacent surfaces.
+ The presentation aims at making the implementation painless; a few examples
+ conclude the paper.
+\end_layout
+
+\begin_layout Section
+Introduction
+\end_layout
+
+\begin_layout Standard
+The S-patch
+\begin_inset space ~
+\end_inset
+
+
+\begin_inset CommandInset citation
+LatexCommand cite
+key "Loop:1989"
+literal "false"
+
+\end_inset
+
+ is the natural multi-sided generalization of the Bézier triangle.
+ It has various nice mathematical properties, and has been known for a long
+ time, but it has not become a household surface representation like the
+ tensor product Bézier patch.
+ It is easy to see why: the number of control points grows very fast, and
+ the control network becomes chaotic even for surfaces of moderate complexity.
+ For example, a 6-sided quintic patch has 252 control points (see Figure
+\begin_inset space ~
+\end_inset
+
+
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:6-5-cnet"
+plural "false"
+caps "false"
+noprefix "false"
+
+\end_inset
+
+).
+ For comparison, a tensor product quintic surface has only 36.
+\begin_inset Float figure
+wide false
+sideways false
+status collapsed
+
+\begin_layout Plain Layout
+\align center
+\begin_inset Graphics
+	filename images/6-5-cnet.png
+	display false
+	width 70text%
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+\begin_inset CommandInset label
+LatexCommand label
+name "fig:6-5-cnet"
+
+\end_inset
+
+The control net of a 6-sided quintic S-patch.
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Interactive placement of such a large number of points is out of the question,
+ but this does not mean that the whole representation should be discarded
+ as impractical.
+ It is particularly suitable for filling multi-sided holes while ensuring
+ tangential continuity to adjacent surfaces – an important problem in curve
+ network based design.
+ In the rest of the paper an algorithm will be described for the automatic
+ placement of control points in a hole filling problem setting.
+\end_layout
+
+\begin_layout Section
+Previous work
+\end_layout
+
+\begin_layout Standard
+A solution to the above problem was presented in
+\begin_inset space ~
+\end_inset
+
+
+\begin_inset CommandInset citation
+LatexCommand cite
+key "Loop:1990"
+literal "false"
+
+\end_inset
+
+, where quadratic and cubic S-patches are created based on Sabin nets.
+ Although the equations presented in the paper are also valid for higher
+ degrees, some of the details are left for the reader to figure out.
+ The placement of interior control points is not discussed for degrees above
+ cubic.
+\end_layout
+
+\begin_layout Standard
+A recent S-patch-based construction
+\begin_inset space ~
+\end_inset
+
+
+\begin_inset CommandInset citation
+LatexCommand cite
+key "Hettinga:2018"
+literal "false"
+
+\end_inset
+
+ gives simple mechanics for 
+\begin_inset Formula $G^{1}$
+\end_inset
+
+-con\SpecialChar softhyphen
+ti\SpecialChar softhyphen
+nu\SpecialChar softhyphen
+o\SpecialChar softhyphen
+us hole filling, even without twist constraints, but only for cubic
+ boundaries.
+ Also, there are no details on the placement of interior control points.
+\end_layout
+
+\begin_layout Standard
+Generalized Bézier (GB) patches
+\begin_inset space ~
+\end_inset
+
+
+\begin_inset CommandInset citation
+LatexCommand cite
+key "Varady:2016:EG"
+literal "false"
+
+\end_inset
+
+ present another approach to represent multi-sided Bézier surfaces.
+ Tangential connection to adjacent patches is very easy to achieve, and
+ its simple control point structure makes it possible to edit the surface
+ interior interactively.
+ On the other hand, some common operations, like degree elevation or exact
+ derivative computation, are difficult or not even possible.
+\end_layout
+
+\begin_layout Standard
+Transfinite surfaces (e.g.
+\begin_inset space ~
+\end_inset
+
+
+\begin_inset CommandInset citation
+LatexCommand cite
+key "Salvi:2017:WAIT"
+literal "false"
+
+\end_inset
+
+) can also be used to fill multi-sided holes, and the boundaries are not
+ limited to Bézier curves; some even have a limited control over the interior.
+\begin_inset Note Note
+status open
+
+\begin_layout Plain Layout
+\begin_inset CommandInset citation
+LatexCommand cite
+key "Schaefer:2017"
+literal "false"
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Section
+S-patches
+\end_layout
+
+\begin_layout Standard
+asd Wachspress coordinates
+\begin_inset space ~
+\end_inset
+
+
+\begin_inset CommandInset citation
+LatexCommand cite
+key "Hormann:2006"
+literal "false"
+
+\end_inset
+
+
+\begin_inset Formula 
+\begin{equation}
+S(\boldsymbol{\lambda})=\sum_{\mathbf{s}}P_{\mathbf{s}}\frac{d!}{\prod_{i=1}^{n}s_{i}!}\cdot\prod_{i=1}^{n}\lambda_{i}^{s_{i}}
+\end{equation}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Section
+Hole filling
+\end_layout
+
+\begin_layout Standard
+asf Same ribbons as in 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "Loop:1990"
+literal "false"
+
+\end_inset
+
+ and 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "Varady:2016:EG"
+literal "false"
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsection
+\begin_inset Formula $C^{0}$
+\end_inset
+
+ boundaries
+\end_layout
+
+\begin_layout Standard
+asf
+\end_layout
+
+\begin_layout Subsection
+\begin_inset Formula $G^{1}$
+\end_inset
+
+ boundaries
+\end_layout
+
+\begin_layout Standard
+asdf
+\end_layout
+
+\begin_layout Subsection
+Interior control points
+\end_layout
+
+\begin_layout Standard
+asdf 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "Farin:1999"
+literal "false"
+
+\end_inset
+
+
+\begin_inset CommandInset citation
+LatexCommand cite
+key "Monterde:2004"
+literal "false"
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Section
+Examples
+\end_layout
+
+\begin_layout Standard
+asdf
+\end_layout
+
+\begin_layout Section*
+Conclusion
+\end_layout
+
+\begin_layout Standard
+asdf
+\end_layout
+
+\begin_layout Section*
+Acknowledgements
+\end_layout
+
+\begin_layout Standard
+This work was supported by the Hungarian Scientific Research Fund (OTKA,
+ No.
+\begin_inset space \space{}
+\end_inset
+
+124727).
+\end_layout
+
+\begin_layout Standard
+\begin_inset CommandInset bibtex
+LatexCommand bibtex
+bibfiles "cikkek,sajat"
+options "plain"
+
+\end_inset
+
+
+\end_layout
+
+\end_body
+\end_document
