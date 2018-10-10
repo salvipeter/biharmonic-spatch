@@ -709,4 +709,17 @@ function spatch_test(name, resolution, g1_continuity = true)
     g1_continuity && write_bezier_cnet(ribbons, "$name-bezier-cnet.obj")
 end
 
+Base.@ccallable function julia_main(ARGS::Vector{String})::Cint
+    if length(ARGS) < 2
+        println(stderr, "Usage: spatch infile outfile [resolution]")
+        return 1
+    end
+    resolution = length(ARGS) >= 3 ? parse(Int, ARGS[3]) : 30
+    ribbons = read_ribbons(ARGS[1])
+    surf = g1_patch(ribbons)
+    optimize_controlnet!(surf)
+    write_surface(surf, ARGS[2], resolution)
+    return 0
+end
+
 end # module
