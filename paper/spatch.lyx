@@ -1882,8 +1882,333 @@ noprefix "false"
 
 ).
  This is computed by applying the harmonic mask on itself, which translates
- to S-patches in a straightforward way.
+ to S-patches in a straightforward way, see Algorithm
+\begin_inset space ~
+\end_inset
+
+
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "alg:Computing-masks"
+plural "false"
+caps "false"
+noprefix "false"
+
+\end_inset
+
+.
  All examples in this paper were computed by this method.
+\begin_inset Float algorithm
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\begin_inset Box Frameless
+position "t"
+hor_pos "c"
+has_inner_box 1
+inner_pos "t"
+use_parbox 0
+use_makebox 0
+width "50col%"
+special "none"
+height "1in"
+height_special "totalheight"
+thickness "0.4pt"
+separation "3pt"
+shadowsize "4pt"
+framecolor "black"
+backgroundcolor "none"
+status open
+
+\begin_layout Plain Layout
+
+\family typewriter
+harmonicMask(i):
+\end_layout
+
+\begin_layout Plain Layout
+
+\family typewriter
+\begin_inset Phantom Phantom
+status open
+
+\begin_layout Plain Layout
+
+\family typewriter
+xx
+\end_layout
+
+\end_inset
+
+neighbors = 
+\family default
+indices adjacent to
+\family typewriter
+ i
+\end_layout
+
+\begin_layout Plain Layout
+
+\family typewriter
+\begin_inset Phantom Phantom
+status open
+
+\begin_layout Plain Layout
+
+\family typewriter
+xx
+\end_layout
+
+\end_inset
+
+for j in neighbors:
+\end_layout
+
+\begin_layout Plain Layout
+
+\family typewriter
+\begin_inset Phantom Phantom
+status open
+
+\begin_layout Plain Layout
+
+\family typewriter
+xx
+\end_layout
+
+\end_inset
+
+
+\begin_inset Phantom Phantom
+status open
+
+\begin_layout Plain Layout
+
+\family typewriter
+xx
+\end_layout
+
+\end_inset
+
+mask[j] = 1
+\end_layout
+
+\begin_layout Plain Layout
+
+\family typewriter
+\begin_inset Phantom Phantom
+status open
+
+\begin_layout Plain Layout
+
+\family typewriter
+xx
+\end_layout
+
+\end_inset
+
+mask[i] = -length(neighbors)
+\end_layout
+
+\begin_layout Plain Layout
+
+\family typewriter
+\begin_inset Phantom Phantom
+status open
+
+\begin_layout Plain Layout
+
+\family typewriter
+xx
+\end_layout
+
+\end_inset
+
+return mask
+\end_layout
+
+\end_inset
+
+
+\begin_inset Box Frameless
+position "t"
+hor_pos "c"
+has_inner_box 1
+inner_pos "t"
+use_parbox 0
+use_makebox 0
+width "50col%"
+special "none"
+height "1in"
+height_special "totalheight"
+thickness "0.4pt"
+separation "3pt"
+shadowsize "4pt"
+framecolor "black"
+backgroundcolor "none"
+status open
+
+\begin_layout Plain Layout
+
+\family typewriter
+biharmonicMask(i):
+\end_layout
+
+\begin_layout Plain Layout
+
+\family typewriter
+\begin_inset Phantom Phantom
+status open
+
+\begin_layout Plain Layout
+
+\family typewriter
+xx
+\end_layout
+
+\end_inset
+
+mask = 0 
+\family default
+for all indices
+\end_layout
+
+\begin_layout Plain Layout
+
+\family typewriter
+\begin_inset Phantom Phantom
+status open
+
+\begin_layout Plain Layout
+
+\family typewriter
+xx
+\end_layout
+
+\end_inset
+
+for (j,wj) in harmonicMask(i):
+\end_layout
+
+\begin_layout Plain Layout
+
+\family typewriter
+\begin_inset Phantom Phantom
+status open
+
+\begin_layout Plain Layout
+
+\family typewriter
+xx
+\end_layout
+
+\end_inset
+
+
+\begin_inset Phantom Phantom
+status open
+
+\begin_layout Plain Layout
+
+\family typewriter
+xx
+\end_layout
+
+\end_inset
+
+for (k,wk) in harmonicMask(j):
+\end_layout
+
+\begin_layout Plain Layout
+
+\family typewriter
+\begin_inset Phantom Phantom
+status open
+
+\begin_layout Plain Layout
+
+\family typewriter
+xx
+\end_layout
+
+\end_inset
+
+
+\begin_inset Phantom Phantom
+status open
+
+\begin_layout Plain Layout
+
+\family typewriter
+xx
+\end_layout
+
+\end_inset
+
+
+\begin_inset Phantom Phantom
+status open
+
+\begin_layout Plain Layout
+
+\family typewriter
+xx
+\end_layout
+
+\end_inset
+
+mask[k] += wj * wk
+\end_layout
+
+\begin_layout Plain Layout
+
+\family typewriter
+\begin_inset Phantom Phantom
+status open
+
+\begin_layout Plain Layout
+
+\family typewriter
+xx
+\end_layout
+
+\end_inset
+
+return mask
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+\begin_inset CommandInset label
+LatexCommand label
+name "alg:Computing-masks"
+
+\end_inset
+
+Computing harmonic and biharmonic masks.
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+
+
 \end_layout
 
 \begin_layout Section
