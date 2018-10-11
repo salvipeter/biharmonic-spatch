@@ -554,7 +554,7 @@ function read_ribbons(filename)
     open(filename) do f
         n, d = read_numbers(f, Int)
         result = BezierPatch(n, d, Dict())
-        l = Int(floor(d + 1) / 2)
+        l = Int(floor((d + 1) / 2))
         cp = 1 + Int(floor(d / 2))
         cp = n * cp * l + 1
         side, col, row = 0, 0, 0
