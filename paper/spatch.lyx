@@ -355,7 +355,7 @@ literal "false"
 
  for one particular label.
  It is easy to see that 
-\begin_inset Formula $|L_{n,d}|=\binom{n+d-1}{n-1}$
+\begin_inset Formula $|L_{n,d}|=\left(\!\!{n \choose d}\!\!\right)=\binom{n+d-1}{d}$
 \end_inset
 
 .
@@ -1257,11 +1257,11 @@ status open
 \begin_inset Tabular
 <lyxtabular version="3" rows="5" columns="5">
 <features tabularvalignment="middle">
-<column alignment="center" valignment="top">
-<column alignment="center" valignment="top">
-<column alignment="center" valignment="top">
-<column alignment="center" valignment="top">
-<column alignment="center" valignment="top">
+<column alignment="center" valignment="top" width="2em">
+<column alignment="center" valignment="top" width="2em">
+<column alignment="center" valignment="top" width="2em">
+<column alignment="center" valignment="top" width="2em">
+<column alignment="center" valignment="top" width="2em">
 <row>
 <cell alignment="center" valignment="top" usebox="none">
 \begin_inset Text
@@ -1566,11 +1566,11 @@ status open
 \begin_inset Tabular
 <lyxtabular version="3" rows="5" columns="5">
 <features tabularvalignment="middle">
-<column alignment="center" valignment="top">
-<column alignment="center" valignment="top">
-<column alignment="center" valignment="top">
-<column alignment="center" valignment="top">
-<column alignment="center" valignment="top">
+<column alignment="center" valignment="top" width="2em">
+<column alignment="center" valignment="top" width="2em">
+<column alignment="center" valignment="top" width="2em">
+<column alignment="center" valignment="top" width="2em">
+<column alignment="center" valignment="top" width="2em">
 <row>
 <cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
 \begin_inset Text
