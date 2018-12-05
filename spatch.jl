@@ -634,6 +634,52 @@ function write_bezier_cnet(ribbons, filename)
     end
 end
 
+function evaltensor(surf, uv)
+    d = size(surf, 1) - 1
+    bernstein(k, x) = binomial(d, k) * x ^ k * (1 - x) ^ (d - k)
+    result = [0, 0, 0]
+    for i in 0:d, j in 0:d
+        result += surf[i+1,j+1,:] * bernstein(i, uv[1]) * bernstein(j, uv[2])
+    end
+    result
+end
+
+function write_tensor(surf, n, filename, resolution)
+    local verts, tris
+    if n == 0
+        verts = [evaltensor(surf, [u, v])
+                 for u in range(0.0, stop=1.0, length=resolution)
+                 for v in range(0.0, stop=1.0, length=resolution)]
+        tris = []
+        for i in 2:resolution, j in 2:resolution
+            index = (j - 1) * resolution + i
+            push!(tris, [index - resolution - 1, index - resolution, index])
+            push!(tris, [index, index - 1, index - resolution - 1])
+        end
+    else
+        poly = regularpoly(n)
+        verts = [evaltensor(surf, p) for p in vertices(poly, resolution)]
+        tris = triangles(n, resolution)
+    end
+    writeOBJ(verts, tris, filename)
+end
+
+function write_tensor_cnet(surf, filename)
+    d = size(surf, 1) - 1
+    open(filename, "w") do f
+        for i in 0:d, j in 0:d
+            p = surf[i+1,j+1,:]
+            println(f, "v $(p[1]) $(p[2]) $(p[3])")
+        end
+        for i in 1:d+1, j in 1:d
+            index = (i - 1) * (d + 1) + j
+            println(f, "l $index $(index+1)")
+            index = (j - 1) * (d + 1) + i
+            println(f, "l $index $(index+d+1)")
+        end
+    end
+end
+
 
 # Obj -> STL utility
 
@@ -720,6 +766,34 @@ Base.@ccallable function julia_main(ARGS::Vector{String})::Cint
     optimize_controlnet!(surf)
     write_surface(surf, ARGS[2], resolution)
     return 0
+end
+
+
+# Tensor product conversion
+
+function tensor(surf)
+    @assert surf.n == 4 "Only 4-sided S-patches can be directly converted to tensor product form"
+    d = surf.d
+    result = zeros(d + 1, d + 1, 3)
+    for (si, p) in surf.cpts
+        i = si[2] + si[3]
+        j = si[3] + si[4]
+        result[i+1,j+1,:] += p * multinomial(si) / (binomial(d, i) * binomial(d, j))
+    end
+    result
+end
+
+function tensor_test(name, resolution)
+    ribbons = read_ribbons("$name.gbp")
+    surf = g1_patch(ribbons)
+    optimize_controlnet!(surf, g1 = true)
+    quad = surf                 # TODO
+    tsurf = tensor(quad)
+    write_cnet(surf, "$name-cnet.obj")
+    write_surface(surf, "$name.obj", resolution)
+    write_tensor_cnet(tsurf, "$name-tensor-cnet.obj")
+    # write_tensor(tsurf, surf.n, "$name-tensor.obj", resolution)
+    write_tensor(tsurf, 0, "$name-tensor-full.obj", resolution)
 end
 
 end # module
