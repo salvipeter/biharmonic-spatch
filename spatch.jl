@@ -151,9 +151,16 @@ bernstein(si, bc) = multinomial(si) * prod(map(^, bc, si))
 """
     regularpoly(n)
 
-A regular `n`-gon on the unit circle, consisting of an array of points.
+A regular `n`-gon on the inscribed circle of [0,1]x[0,1], consisting of an array of points.
+For `n = 4` it returns the whole [0,1]x[0,1] square.
 """
-regularpoly(n) = [[cos(a), sin(a)] for a in range(0.0, length=n+1, stop=2pi)][1:n]
+function regularpoly(n)
+    if n == 4
+        [[0., 0], [1, 0], [1, 1], [0, 1]]
+    else
+        [[0.5+cos(a)/2, 0.5+sin(a)/2] for a in range(0.0, length=n+1, stop=2pi)][1:n]
+    end
+end
 
 """
     barycentric(poly, p; barycentric_type, tolerance)
@@ -221,7 +228,7 @@ with `resolution + 1` points at the boundaries.
 function vertices(poly, resolution)
     n = length(poly)
     lines = [(poly[mod1(i-1,n)], poly[i]) for i in 1:n]
-    center = [0.0, 0.0]
+    center = [0.5, 0.5]
     result = [center]
     for j in 1:resolution
         coeff = j / resolution
@@ -634,6 +641,12 @@ function write_bezier_cnet(ribbons, filename)
     end
 end
 
+"""
+    evaltensor(surf, uv)
+
+Evaluates a tensor product Bézier surface at the given parameters.
+The surface is given as 3D array where `surf[i,j,:]` is one control point.
+"""
 function evaltensor(surf, uv)
     d = size(surf, 1) - 1
     bernstein(k, x) = binomial(d, k) * x ^ k * (1 - x) ^ (d - k)
@@ -644,6 +657,12 @@ function evaltensor(surf, uv)
     result
 end
 
+"""
+    write_tensor(surf, n, filename, resolution)
+
+Writes a tensor product Bézier surface to a mesh file with the given resolution.
+When `n = 0`, the whole domain is taken; otherwise only an `n`-sided domain is sampled.
+"""
 function write_tensor(surf, n, filename, resolution)
     local verts, tris
     if n == 0
@@ -664,6 +683,11 @@ function write_tensor(surf, n, filename, resolution)
     writeOBJ(verts, tris, filename)
 end
 
+"""
+    write_tensor_cnet(surf, filename)
+
+Writes the control structure of a tensor product Bézier surface to a mesh file.
+"""
 function write_tensor_cnet(surf, filename)
     d = size(surf, 1) - 1
     open(filename, "w") do f
@@ -771,6 +795,21 @@ end
 
 # Tensor product conversion
 
+"""
+    quadify(surf)
+
+Converts an arbitrary S-patch into a 4-sided S-patch.
+"""
+function quadify(surf)
+    # TODO
+    surf
+end
+
+"""
+    tensor(surf)
+
+Covnerts a 4-sided S-patch into a tensor product Bézier patch.
+"""
 function tensor(surf)
     @assert surf.n == 4 "Only 4-sided S-patches can be directly converted to tensor product form"
     d = surf.d
@@ -783,16 +822,30 @@ function tensor(surf)
     result
 end
 
+"""
+    tensor_test(name, resolution)
+
+Reads a GB patch from the file `name`.gbp, and computes an S-patch
+with the same boundary, and optimized inner control points.
+Then it is converted into a tensor product Bézier surface.
+
+The function outputs several files:
+- `name`-cnet.obj [the S-patch control net]
+- `name`.obj [the S-patch surface]
+- `name`-tensor-cnet.obj [the tensor product control net]
+- `name`-tensor.obj [the trimmed tensor product patch]
+- `name`-tensor-full.obj [the whole tensor product patch]
+"""
 function tensor_test(name, resolution)
     ribbons = read_ribbons("$name.gbp")
     surf = g1_patch(ribbons)
     optimize_controlnet!(surf, g1 = true)
-    quad = surf                 # TODO
+    quad = quadify(surf)
     tsurf = tensor(quad)
     write_cnet(surf, "$name-cnet.obj")
     write_surface(surf, "$name.obj", resolution)
     write_tensor_cnet(tsurf, "$name-tensor-cnet.obj")
-    # write_tensor(tsurf, surf.n, "$name-tensor.obj", resolution)
+    write_tensor(tsurf, surf.n, "$name-tensor.obj", resolution)
     write_tensor(tsurf, 0, "$name-tensor-full.obj", resolution)
 end
 
