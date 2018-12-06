@@ -823,13 +823,14 @@ function fromsimplex(bc)
 end
 
 """
-    inc_index(index, j)
+    inc_index(index, j, [n])
 
-Returns a new index that is the same as `index`, but with the `j`-th position increased by 1.
+Returns a new index that is the same as `index`, but with the `j`-th position
+increased by `n`.
 """
-function inc_index(index, j)
+function inc_index(index, j, n = 1)
     result = copy(index)
-    result[j] += 1
+    result[j] += n
     result
 end
 
@@ -841,6 +842,48 @@ Returns the list of all valid indices `i` s.t. `index - i` sums to `d`.
 subindices(index, d) = filter(i -> all((index - i) .>= 0), indices(length(index), sum(index) - d))
 
 """
+    partitions(index, k)
+
+Returns all partitions of `index` to indices of the same length s.t. all indices sum to `k`,
+and the sum of all indices is `index`.
+"""
+function partitions(index, k)
+    result = []
+    n = length(index)
+    s = sum(index) ÷ k
+    function rec(rest, i, current, count, acc)
+        if length(acc) == s
+            push!(result, acc)
+            return
+        end
+        if count == k
+            next = copy(acc)
+            push!(next, current)
+            return rec(rest, 1, zeros(Int, n), 0, next)
+        end
+        for j in i:n
+            if rest[j] > 0
+                rec(inc_index(rest, j, -1), j, inc_index(current, j), count + 1, acc)
+            end
+        end
+    end
+    rec(index, 1, zeros(Int, n), 0, [])
+    sort!(result)
+    unique!(result)
+end
+
+"""
+    blossom(index, p, V)
+
+Generalized blossoming.
+"""
+function blossom(index, p, V)
+    n = length(p[1])
+    length(p) == 1 && return sum(alpha -> p[1][alpha] * V[inc_index(index, alpha)], 1:n)
+    sum(alpha -> p[end][alpha] * blossom(inc_index(index, alpha), p[1:end-1], V), 1:n)
+end
+
+"""
     compose(S, f)
 
 Computes the composed simplex `S ∘ f`.
@@ -848,15 +891,21 @@ Computes the composed simplex `S ∘ f`.
 As in: T. DeRose, Composing Bézier Simplexes. ACM ToG 7(3), pp. 198-221, 1988.
 """
 function compose(S, f)
-    function V(s, i, r)
-        s == 0 && return S.cpts[i]
-        indices = subindices(r, f.d)
-        isempty(indices) && return zeros(length(iterate(S.cpts)[1][2]))
-        sum(indices) do j
-            C = f.cpts[r - j]
-            W = sum(alpha -> C[alpha] * V(s - 1, inc_index(i, alpha), j), 1:S.n)
-            multinomial(j) * multinomial(r - j) * W
-        end / multinomial(r)
+    # function V(s, i, r) # see Theorem 4.1 & Corollary 4.2
+    #     s == 0 && return S.cpts[i]
+    #     indices = subindices(r, f.d)
+    #     isempty(indices) && return zeros(length(iterate(S.cpts)[1][2]))
+    #     sum(indices) do j
+    #         C = f.cpts[r - j]
+    #         W = sum(alpha -> C[alpha] * V(s - 1, inc_index(i, alpha), j), 1:S.n)
+    #         multinomial(j) * multinomial(r - j) * W
+    #     end / multinomial(r)
+    # end
+    function V(s, i, r) # see Claim 4.3
+        sum(partitions(r, f.d)) do js
+            blossom(i, map(j -> f.cpts[j], js), S.cpts) *
+                prod(j -> multinomial(j), js) / multinomial(r)
+        end
     end
     n = f.n
     d = S.d * f.d
@@ -895,6 +944,7 @@ function quadify(surf)
     end
     points(i) = reduce(vcat, [repeat([fromsimplex(s)], j)
                               for (s, j) in zip([[1.,0,0], [0,1,0], [0,0,1]], i)])
+
     # Setup the simplexes
     A = SPatch(4, 1, Dict([1,0,0,0] => tosimplex([0.0, 0.0]),
                           [0,1,0,0] => tosimplex([1.0, 0.0]),
