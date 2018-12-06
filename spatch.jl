@@ -134,11 +134,18 @@ end
 # Evaluation
 
 """
+    fact(n)
+
+Arbitrary-length factorial.
+"""
+fact(n) = prod(1:BigInt(n))
+
+"""
     multinomial(si)
 
 The multinomial value of `sum(si)` over the elements of `si`.
 """
-multinomial(si) = factorial(sum(si)) ÷ prod(map(factorial, si))
+multinomial(si) = fact(sum(si)) ÷ prod(map(fact, si))
 
 """
     bernstein(si, bc)
@@ -796,13 +803,95 @@ end
 # Tensor product conversion
 
 """
+    tosimplex(p)
+
+Returns the barycentric coordinates of the (`n`-dimensional) `p` point
+relative to the domain simplex `[0, e_1, ..., e_n]`.
+"""
+function tosimplex(p)
+    [1 - sum(p); p]
+end
+
+"""
+    fromsimplex(bc)
+
+Returns the coordinates of the point with barycentric coordinates `bc`
+relative to the domain simplex `[0, e_1, ..., e_n]`.
+"""
+function fromsimplex(bc)
+    bc[2:end]
+end
+
+"""
+    compose(S, f)
+
+Computes the composed simplex `S ∘ f`.
+
+As in: T. DeRose, Composing Bézier Simplexes. ACM ToG 7(3), pp. 198-221, 1988.
+"""
+function compose(S, f)
+    function inc_index(index, j)
+        result = copy(index)
+        result[j] += 1
+        result
+    end
+    function subindices(index, d)
+        filter(i -> all((index - i) .> 0), indices(length(index), sum(index) - d))
+    end
+    function V(s, i, r)
+        s == 0 && return S.cpts[i]
+        indices = subindices(r, f.d)
+        isempty(indices) && return zeros(length(iterate(S.cpts)[1]))
+        sum(indices) do j
+            C = tosimplex(f.cpts[r - j])
+            W = sum(alpha -> C[alpha] * V(s - 1, inc_index(i, alpha), j), 1:S.n)
+            multinomial(j) * multinomial(r - j) * W
+        end / multinomial(r)
+    end
+    n = f.n
+    d = S.d * f.d
+    SPatch(n, d, Dict([r => V(S.d, zeros(Int, S.n), r) for r in indices(n, d)]))
+end
+
+"""
+    line_point_distance(l1, l2, p)
+
+Returns the distance of the point `p` from the line defined
+by the two points `l1` and `l2`.
+"""
+function line_point_distance(l1, l2, p)
+    d = p - l1
+    t = normalize(l2 - l1)
+    norm(d - t * dot(d, t))
+end
+
+"""
     quadify(surf)
 
 Converts an arbitrary S-patch into a 4-sided S-patch.
 """
 function quadify(surf)
-    # TODO
-    surf
+    n = surf.n
+    n == 4 && return surf
+    # Helper functions
+    poly = regularpoly(n)
+    dist(i, q) = line_point_distance(poly[i], poly[mod1(i+1,n)], q)
+    function polarization(p)
+        one(i) = sum(1:n-2) do j
+            prod(k -> k == i || k == i - 1 ? 1.0 : dist(k, p[j]), 1:n)
+        end
+        [one(i) / sum(j -> one(j), 1:n) for i in 1:n]
+    end
+    points(i) = reduce(vcat, [repeat([fromsimplex(s)], j)
+                              for (s, j) in zip([[1.,0,0], [0,1,0], [0,0,1]], i)])
+    # Setup the simplexes
+    A = SPatch(4, 1, Dict([1,0,0,0] => tosimplex([0.0, 0.0]),
+                          [0,1,0,0] => tosimplex([1.0, 0.0]),
+                          [0,0,1,0] => tosimplex([1.0, 1.0]),
+                          [0,0,0,1] => tosimplex([0.0, 1.0])))
+    cpts = Dict([i => polarization(points(i)) for i in indices(3, n - 2)])
+    L = SPatch(3, n - 2, cpts)
+    compose(surf, compose(L, A))
 end
 
 """
@@ -832,6 +921,8 @@ Then it is converted into a tensor product Bézier surface.
 The function outputs several files:
 - `name`-cnet.obj [the S-patch control net]
 - `name`.obj [the S-patch surface]
+- `name`-quad-cnet.obj [the 4-sided S-patch control net]
+- `name`-quad.obj [the 4-sided S-patch]
 - `name`-tensor-cnet.obj [the tensor product control net]
 - `name`-tensor.obj [the trimmed tensor product patch]
 - `name`-tensor-full.obj [the whole tensor product patch]
@@ -841,9 +932,13 @@ function tensor_test(name, resolution)
     surf = g1_patch(ribbons)
     optimize_controlnet!(surf, g1 = true)
     quad = quadify(surf)
+    println("n = $(quad.n), d = $(quad.d)")
+    # println("cpts = $(quad.cpts)")
     tsurf = tensor(quad)
     write_cnet(surf, "$name-cnet.obj")
     write_surface(surf, "$name.obj", resolution)
+    write_cnet(quad, "$name-quad-cnet.obj")
+    write_surface(quad, "$name-quad.obj", resolution)
     write_tensor_cnet(tsurf, "$name-tensor-cnet.obj")
     write_tensor(tsurf, surf.n, "$name-tensor.obj", resolution)
     write_tensor(tsurf, 0, "$name-tensor-full.obj", resolution)
