@@ -823,6 +823,24 @@ function fromsimplex(bc)
 end
 
 """
+    inc_index(index, j)
+
+Returns a new index that is the same as `index`, but with the `j`-th position increased by 1.
+"""
+function inc_index(index, j)
+    result = copy(index)
+    result[j] += 1
+    result
+end
+
+"""
+    subindices(index, d)
+
+Returns the list of all valid indices `i` s.t. `index - i` sums to `d`.
+"""
+subindices(index, d) = filter(i -> all((index - i) .>= 0), indices(length(index), sum(index) - d))
+
+"""
     compose(S, f)
 
 Computes the composed simplex `S ∘ f`.
@@ -830,20 +848,12 @@ Computes the composed simplex `S ∘ f`.
 As in: T. DeRose, Composing Bézier Simplexes. ACM ToG 7(3), pp. 198-221, 1988.
 """
 function compose(S, f)
-    function inc_index(index, j)
-        result = copy(index)
-        result[j] += 1
-        result
-    end
-    function subindices(index, d)
-        filter(i -> all((index - i) .> 0), indices(length(index), sum(index) - d))
-    end
     function V(s, i, r)
         s == 0 && return S.cpts[i]
         indices = subindices(r, f.d)
-        isempty(indices) && return zeros(length(iterate(S.cpts)[1]))
+        isempty(indices) && return zeros(length(iterate(S.cpts)[1][2]))
         sum(indices) do j
-            C = tosimplex(f.cpts[r - j])
+            C = f.cpts[r - j]
             W = sum(alpha -> C[alpha] * V(s - 1, inc_index(i, alpha), j), 1:S.n)
             multinomial(j) * multinomial(r - j) * W
         end / multinomial(r)
@@ -873,6 +883,7 @@ Converts an arbitrary S-patch into a 4-sided S-patch.
 function quadify(surf)
     n = surf.n
     n == 4 && return surf
+
     # Helper functions
     poly = regularpoly(n)
     dist(i, q) = line_point_distance(poly[i], poly[mod1(i+1,n)], q)
@@ -889,8 +900,7 @@ function quadify(surf)
                           [0,1,0,0] => tosimplex([1.0, 0.0]),
                           [0,0,1,0] => tosimplex([1.0, 1.0]),
                           [0,0,0,1] => tosimplex([0.0, 1.0])))
-    cpts = Dict([i => polarization(points(i)) for i in indices(3, n - 2)])
-    L = SPatch(3, n - 2, cpts)
+    L = SPatch(3, n - 2, Dict([i => polarization(points(i)) for i in indices(3, n - 2)]))
     compose(surf, compose(L, A))
 end
 
@@ -933,7 +943,6 @@ function tensor_test(name, resolution)
     optimize_controlnet!(surf, g1 = true)
     quad = quadify(surf)
     println("n = $(quad.n), d = $(quad.d)")
-    # println("cpts = $(quad.cpts)")
     tsurf = tensor(quad)
     write_cnet(surf, "$name-cnet.obj")
     write_surface(surf, "$name.obj", resolution)
