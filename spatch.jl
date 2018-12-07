@@ -809,7 +809,8 @@ Returns the barycentric coordinates of the (`n`-dimensional) `p` point
 relative to the domain simplex `[[-1.5, 0], [2.5, 0], [0.5, sqrt(3)]]`.
 """
 function tosimplex(p)
-    barycentric([[-1.5, 0], [2.5, 0], [0.5, sqrt(3)]], p)
+    triangle = [[-1.5, 0], [2.5, 0], [0.5, sqrt(3)]]
+    barycentric(triangle, p)
 end
 
 """
@@ -819,7 +820,8 @@ Returns the coordinates of the point with barycentric coordinates `bc`
 relative to the domain simplex `[[-1.5, 0], [2.5, 0], [0.5, sqrt(3)]]`.
 """
 function fromsimplex(bc)
-    sum([[-1.5, 0], [2.5, 0], [0.5, sqrt(3)]] .* bc)
+    triangle = [[-1.5, 0], [2.5, 0], [0.5, sqrt(3)]]
+    sum(triangle .* bc)
 end
 
 """
@@ -915,13 +917,13 @@ end
 """
     line_point_distance(l1, l2, p)
 
-Returns the distance of the point `p` from the line defined
+Returns the signed distance of the point `p` from the line defined
 by the two points `l1` and `l2`.
 """
 function line_point_distance(l1, l2, p)
     d = p - l1
     t = normalize(l2 - l1)
-    norm(d - t * dot(d, t))
+    norm(d - t * dot(d, t)) * sign(det([p - l1 p - l2]))
 end
 
 """
@@ -935,16 +937,15 @@ function quadify(surf)
 
     # Helper functions
     poly = regularpoly(n)
+    # polarization(p) = barycentric(poly, sum(p) / (n - 2))
     dist(i, q) = line_point_distance(poly[i], poly[mod1(i+1,n)], q)
     function polarization(p)
-        one(i) = sum(1:n-2) do j
-            prod(k -> k == i || k == i - 1 ? 1.0 : dist(k, p[j]), 1:n)
+        one(i) = prod(1:n) do k
+            (k == i || k == mod1(i - 1, n)) && return 1.0
+            dist(k, sum(p) / (n - 2))
         end
-        # one(i) = prod(1:n) do k
-        #     (k == i || k == i - 1) && return 1.0
-        #     sum(j -> dist(k, p[j]), 1:n-2) / (n - 2)
-        # end
-        [one(i) / sum(j -> one(j), 1:n) for i in 1:n]
+        w = [one(i) for i in 1:n]
+        w / sum(w)
     end
     points(i) = reduce(vcat, [repeat([fromsimplex(s)], j)
                               for (s, j) in zip([[1.,0,0], [0,1,0], [0,0,1]], i)])
