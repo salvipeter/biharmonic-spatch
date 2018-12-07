@@ -937,16 +937,10 @@ function quadify(surf)
 
     # Helper functions
     poly = regularpoly(n)
-    # polarization(p) = barycentric(poly, sum(p) / (n - 2))
-    dist(i, q) = line_point_distance(poly[i], poly[mod1(i+1,n)], q)
-    function polarization(p)
-        one(i) = prod(1:n) do k
-            (k == i || k == mod1(i - 1, n)) && return 1.0
-            dist(k, sum(p) / (n - 2))
-        end
-        w = [one(i) for i in 1:n]
-        w / sum(w)
-    end
+    polarization(p) = barycentric(poly, sum(p) / (n - 2))
+    # Does not work for n > 4, because the barycentric coordinates are rational,
+    # and can only be expressed with multiprojective polarization, which would
+    # (of course) propagate the "rationalness" down to the resulting tensor product patch.
     points(i) = reduce(vcat, [repeat([fromsimplex(s)], j)
                               for (s, j) in zip([[1.,0,0], [0,1,0], [0,0,1]], i)])
 
