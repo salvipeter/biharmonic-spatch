@@ -806,20 +806,20 @@ end
     tosimplex(p)
 
 Returns the barycentric coordinates of the (`n`-dimensional) `p` point
-relative to the domain simplex `[0, e_1, ..., e_n]`.
+relative to the domain simplex `[[-1.5, 0], [2.5, 0], [0.5, sqrt(3)]]`.
 """
 function tosimplex(p)
-    [1 - sum(p); p]
+    barycentric([[-1.5, 0], [2.5, 0], [0.5, sqrt(3)]], p)
 end
 
 """
     fromsimplex(bc)
 
 Returns the coordinates of the point with barycentric coordinates `bc`
-relative to the domain simplex `[0, e_1, ..., e_n]`.
+relative to the domain simplex `[[-1.5, 0], [2.5, 0], [0.5, sqrt(3)]]`.
 """
 function fromsimplex(bc)
-    bc[2:end]
+    sum([[-1.5, 0], [2.5, 0], [0.5, sqrt(3)]] .* bc)
 end
 
 """
@@ -891,7 +891,7 @@ Computes the composed simplex `S ∘ f`.
 As in: T. DeRose, Composing Bézier Simplexes. ACM ToG 7(3), pp. 198-221, 1988.
 """
 function compose(S, f)
-    # function V(s, i, r) # see Theorem 4.1 & Corollary 4.2
+    # function V(s, i, r) # see Theorem 4.1
     #     s == 0 && return S.cpts[i]
     #     indices = subindices(r, f.d)
     #     isempty(indices) && return zeros(length(iterate(S.cpts)[1][2]))
@@ -940,16 +940,20 @@ function quadify(surf)
         one(i) = sum(1:n-2) do j
             prod(k -> k == i || k == i - 1 ? 1.0 : dist(k, p[j]), 1:n)
         end
+        # one(i) = prod(1:n) do k
+        #     (k == i || k == i - 1) && return 1.0
+        #     sum(j -> dist(k, p[j]), 1:n-2) / (n - 2)
+        # end
         [one(i) / sum(j -> one(j), 1:n) for i in 1:n]
     end
     points(i) = reduce(vcat, [repeat([fromsimplex(s)], j)
                               for (s, j) in zip([[1.,0,0], [0,1,0], [0,0,1]], i)])
 
     # Setup the simplexes
-    A = SPatch(4, 1, Dict([1,0,0,0] => tosimplex([0.0, 0.0]),
-                          [0,1,0,0] => tosimplex([1.0, 0.0]),
-                          [0,0,1,0] => tosimplex([1.0, 1.0]),
-                          [0,0,0,1] => tosimplex([0.0, 1.0])))
+    A = SPatch(4, 1, Dict([1,0,0,0] => tosimplex([0.0, 1.0]),
+                          [0,1,0,0] => tosimplex([1.0, 1.0]),
+                          [0,0,1,0] => tosimplex([1.0, 0.0]),
+                          [0,0,0,1] => tosimplex([0.0, 0.0])))
     L = SPatch(3, n - 2, Dict([i => polarization(points(i)) for i in indices(3, n - 2)]))
     compose(surf, compose(L, A))
 end
@@ -972,13 +976,18 @@ function tensor(surf)
 end
 
 """
-    tensor_test(name, resolution)
+    tensor_test(name, resolution, [g1_continuity])
 
 Reads a GB patch from the file `name`.gbp, and computes an S-patch
 with the same boundary, and optimized inner control points.
+
+When `g1_continuity` is `true` (the default), the resulting S-patch
+will have the same normal sweep at its boundaries as the GB patch.
+
 Then it is converted into a tensor product Bézier surface.
 
 The function outputs several files:
+- `name`-bezier-cnet.obj [the original GB ribbons]
 - `name`-cnet.obj [the S-patch control net]
 - `name`.obj [the S-patch surface]
 - `name`-quad-cnet.obj [the 4-sided S-patch control net]
@@ -987,13 +996,18 @@ The function outputs several files:
 - `name`-tensor.obj [the trimmed tensor product patch]
 - `name`-tensor-full.obj [the whole tensor product patch]
 """
-function tensor_test(name, resolution)
+function tensor_test(name, resolution, g1_continuity = true)
     ribbons = read_ribbons("$name.gbp")
-    surf = g1_patch(ribbons)
-    optimize_controlnet!(surf, g1 = true)
+    println("Hole filling...")
+    surf = g1_continuity ? g1_patch(ribbons) : c0_patch(ribbons)
+    optimize_controlnet!(surf, g1 = g1_continuity)
+    println("Quadifying...")
     quad = quadify(surf)
-    println("n = $(quad.n), d = $(quad.d)")
+    println("d = $(quad.d)")
+    println("Creating tensor product patch...")
     tsurf = tensor(quad)
+    println("Writing meshes...")
+    g1_continuity && write_bezier_cnet(ribbons, "$name-bezier-cnet.obj")
     write_cnet(surf, "$name-cnet.obj")
     write_surface(surf, "$name.obj", resolution)
     write_cnet(quad, "$name-quad-cnet.obj")
