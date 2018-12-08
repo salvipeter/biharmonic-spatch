@@ -758,6 +758,18 @@ function obj2stl(filenames, outfile)
     end
 end
 
+function write_spatch(surf, filename)
+    open(filename, "w") do f
+        println(f, "$(surf.n) $(surf.d)")
+        for (k, v) in surf.cpts
+            for i in k
+                print(f, "$i ")
+            end
+            println(f, "$(v[1]) $(v[2]) $(v[3])")
+        end
+    end
+end
+
 
 # Main function
 
@@ -771,7 +783,8 @@ When `g1_continuity` is `true` (the default), the resulting S-patch
 will have the same normal sweep at its boundaries as the GB patch.
 
 The function outputs several files:
-- `name`.obj [the S-patch surface]
+- `name`.sp [the S-patch surface]
+- `name`.obj [the S-patch surface mesh]
 - `name`-cnet.obj [the full S-patch control net]
 - `name`-ribbon.obj [the fixed boundary part of the S-patch control net]
 - `name`-bezier-cnet.obj [the original GB ribbons]
@@ -780,6 +793,7 @@ function spatch_test(name, resolution, g1_continuity = true)
     ribbons = read_ribbons("$name.gbp")
     surf = g1_continuity ? g1_patch(ribbons) : c0_patch(ribbons)
     optimize_controlnet!(surf, g1 = g1_continuity)
+    write_spatch(surf, "$name.sp")
     write_surface(surf, "$name.obj", resolution)
     write_cnet(surf, "$name-cnet.obj")
     write_cnet(surf, "$name-ribbon.obj", g1 = g1_continuity, only_fixed = true)
@@ -984,7 +998,7 @@ Then it is converted into a tensor product Bézier surface.
 The function outputs several files:
 - `name`-bezier-cnet.obj [the original GB ribbons]
 - `name`-cnet.obj [the S-patch control net]
-- `name`.obj [the S-patch surface]
+- `name`.obj [the S-patch surface mesh]
 - `name`-quad-cnet.obj [the 4-sided S-patch control net]
 - `name`-quad.obj [the 4-sided S-patch]
 - `name`-tensor-cnet.obj [the tensor product control net]

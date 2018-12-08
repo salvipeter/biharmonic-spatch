@@ -3,6 +3,8 @@ syntax: glob
 *~
 .\#*
 *\#
+*.orig
 *.gbp
 *.obj
 *.skd
+*.sp
