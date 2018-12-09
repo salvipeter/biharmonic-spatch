@@ -3,6 +3,7 @@ module BiharmonicSPatch
 import Base: getindex, setindex!, get!
 using LinearAlgebra
 
+const FactInt = Int64 # BigInt
 const Index = Vector{Int}
 const Point = Vector{Float64}
 
@@ -138,7 +139,7 @@ end
 
 Arbitrary-length factorial.
 """
-fact(n) = prod(1:BigInt(n))
+fact(n) = prod(1:FactInt(n))
 
 """
     multinomial(si)
@@ -758,6 +759,14 @@ function obj2stl(filenames, outfile)
     end
 end
 
+"""
+    write_spatch(surf, filename)
+
+Writes the S-patch `surf` into `filename` in the following format:
+- first line: <# of sides> <depth>
+- all other lines <index> <control point position>
+An example for the latter: 1 3 2 25.0 10.0 -1.0
+"""
 function write_spatch(surf, filename)
     open(filename, "w") do f
         println(f, "$(surf.n) $(surf.d)")
@@ -767,6 +776,28 @@ function write_spatch(surf, filename)
             end
             println(f, "$(v[1]) $(v[2]) $(v[3])")
         end
+    end
+end
+
+"""
+    read_spatch(filename)
+
+Reads an S-patch from the file `filename`.
+See `write_spatch` for the file format specification.
+"""
+function read_spatch(filename)
+    read_numbers(lst, numtype) = map(s -> parse(numtype, s), lst)
+    open(filename) do f
+        n, d = read_numbers(split(readline(f)), Int)
+        size = binomial(n + d - 1, d)
+        result = SPatch(n, d, Dict())
+        for _ in 1:size
+            line = split(readline(f))
+            index = read_numbers(line[1:end-3], Int)
+            point = read_numbers(line[end-2:end], Float64)
+            result.cpts[index] = point
+        end
+        result
     end
 end
 
@@ -1024,6 +1055,65 @@ function tensor_test(name, resolution, g1_continuity = true)
     write_tensor_cnet(tsurf, "$name-tensor-cnet.obj")
     write_tensor(tsurf, surf.n, "$name-tensor.obj", resolution)
     write_tensor(tsurf, 0, "$name-tensor-full.obj", resolution)
+end
+
+
+# Warren's patch
+
+"""
+    warrenize!(triangle, m)
+
+Converts all control points to homogenous coordinates, and sets base points based on `m`:
+all indices `[i,j,k]` get a weight of 0, when j + k < m[1] or i + k < m[2] or i + j < m[3].
+"""
+function warrenize!(triangle, m)
+    @assert triangle.n == 3 "This function only works on Bezier triangles."
+    for (k, v) in triangle.cpts
+        if k[2] + k[3] < m[1] || k[1] + k[3] < m[2] || k[1] + k[2] < m[3]
+            triangle.cpts[k] = [0, 0, 0, 0]
+        elseif length(v) == 3
+            triangle.cpts[k] = [v; 1]
+        else
+            triangle.cpts[k][4] = 1
+        end
+    end
+end
+
+"""
+    eval_one_rat(surf, poly, p)
+
+Evaluates the rational S-patch `surf` at domain point `p` inside the domain polygon `poly`.
+"""
+function eval_one_rat(surf, poly, p)
+    result = [0, 0, 0, 0]
+    bc = barycentric(poly, p)
+    for (i, q) in surf.cpts
+        result += q * bernstein(i, bc)
+    end
+    result[1:3] / result[4]
+end
+
+"""
+    eval_all_rat(surf, resolution)
+
+Evaluates the rational S-patch `surf` at a given `resolution` (interpreted as in `vertices`),
+and returns a pair of arrays (vertices, triangles).
+"""
+function eval_all_rat(surf, resolution)
+    poly = regularpoly(surf.n)
+    ([eval_one_rat(surf, poly, p) for p in vertices(poly, resolution)],
+     triangles(surf.n, resolution))
+end
+
+"""
+    write_surface_rat(surf, filename, resolution)
+
+Writes the rational S-patch `surf` into a Wavefront Object file designated by
+`filename` with sampling rate `resolution` (interpreted as in `vertices`).
+"""
+function write_surface_rat(surf, filename, resolution)
+    vs, ts = eval_all_rat(surf, resolution)
+    writeOBJ(vs, ts, filename)
 end
 
 end # module
