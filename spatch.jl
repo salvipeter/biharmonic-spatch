@@ -774,7 +774,7 @@ function write_spatch(surf, filename)
             for i in k
                 print(f, "$i ")
             end
-            println(f, "$(v[1]) $(v[2]) $(v[3])")
+            println(f, join(v, " "))
         end
     end
 end
@@ -793,8 +793,8 @@ function read_spatch(filename)
         result = SPatch(n, d, Dict())
         for _ in 1:size
             line = split(readline(f))
-            index = read_numbers(line[1:end-3], Int)
-            point = read_numbers(line[end-2:end], Float64)
+            index = read_numbers(line[1:n], Int)
+            point = read_numbers(line[n+1:end], Float64)
             result.cpts[index] = point
         end
         result
