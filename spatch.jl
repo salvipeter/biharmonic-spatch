@@ -960,6 +960,63 @@ function compose(S, f)
 end
 
 """
+    successor(i)
+
+Returns the next multi-index in lexicographic order.
+Returns nothing when called for the maximum index.
+"""
+function successor(i)
+    p = findlast(x -> x != 0, i)
+    p == 1 && return nothing
+    j = copy(i)
+    v = j[p]
+    j[p-1] += 1
+    j[p] = 0
+    j[end] = v - 1
+    j
+end
+
+"""
+    compose_fast(F, G)
+
+Computes the composed simplex `F ∘ G`.
+
+As in: T. DeRose et al., Functional composition algorithms via blossoming.
+ACM ToG 12(2), pp. 113-135, 1993.
+"""
+function compose_fast(F, G)
+    function eval_blossom_arg!(Vbar, p, u)
+        n, d = Vbar.n, Vbar.d
+        for i in indices(n, d - p)
+            Vbar[[p;i]] = sum(j -> Vbar[[p-1;inc_index(i, j)]] * u[j], 1:n)
+        end
+    end
+    function recursive_compose!(Fbar, G, H, n, m, s, c, mu)
+        if n == Fbar.d
+            H[s] += Fbar[[n;zeros(Int,Fbar.n)]] * c
+        else
+            i = m
+            while i != nothing
+                eval_blossom_arg!(Fbar, n + 1, G[i])
+                mu = i == m ? mu + 1 : 1
+                recursive_compose!(Fbar, G, H, n + 1, i, s + i, c * multinomial(i) / mu, mu)
+                i = successor(i)
+            end
+        end
+    end
+    l, m = G.d, F.d
+    n, d = G.n, l * m
+    H = SPatch(n, d, Dict([i => zeros(length(iterate(F.cpts)[1][2])) for i in indices(n, d)]))
+    Fbar = SPatch(F.n, F.d, Dict([[0; i] => p for (i, p) in F.cpts]))
+    imin = make_index(n, (n, l)) # <- the paper says (n, d), which is clearly wrong
+    recursive_compose!(Fbar, G, H, 0, imin, zeros(Int, n), factorial(F.d), 0)
+    for i in keys(H.cpts)
+        H[i] /= multinomial(i)
+    end
+    H
+end
+
+"""
     line_point_distance(l1, l2, p)
 
 Returns the signed distance of the point `p` from the line defined
@@ -995,7 +1052,7 @@ function quadify(surf)
                           [0,0,1,0] => tosimplex([1.0, 0.0]),
                           [0,0,0,1] => tosimplex([0.0, 0.0])))
     L = SPatch(3, n - 2, Dict([i => polarization(points(i)) for i in indices(3, n - 2)]))
-    compose(surf, compose(L, A))
+    @time compose_fast(surf, compose_fast(L, A))
 end
 
 """
