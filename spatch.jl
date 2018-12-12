@@ -652,17 +652,17 @@ end
 """
     evaltensor(surf, uv)
 
-Evaluates a tensor product Bézier surface at the given parameters.
+Evaluates a tensor product rational Bézier surface at the given parameters.
 The surface is given as 3D array where `surf[i,j,:]` is one control point.
 """
 function evaltensor(surf, uv)
     d = size(surf, 1) - 1
     bernstein(k, x) = binomial(d, k) * x ^ k * (1 - x) ^ (d - k)
-    result = [0, 0, 0]
+    result = [0, 0, 0, 0]
     for i in 0:d, j in 0:d
         result += surf[i+1,j+1,:] * bernstein(i, uv[1]) * bernstein(j, uv[2])
     end
-    result
+    result[1:3] / result[4]
 end
 
 """
@@ -694,13 +694,13 @@ end
 """
     write_tensor_cnet(surf, filename)
 
-Writes the control structure of a tensor product Bézier surface to a mesh file.
+Writes the control structure of a tensor product rational Bézier surface to a mesh file.
 """
 function write_tensor_cnet(surf, filename)
     d = size(surf, 1) - 1
     open(filename, "w") do f
         for i in 0:d, j in 0:d
-            p = surf[i+1,j+1,:]
+            p = surf[i+1,j+1,1:3] / surf[i+1,j+1,4]
             println(f, "v $(p[1]) $(p[2]) $(p[3])")
         end
         for i in 1:d+1, j in 1:d
@@ -850,7 +850,7 @@ end
 """
     tosimplex(p)
 
-Returns the barycentric coordinates of the (`n`-dimensional) `p` point
+Returns the barycentric coordinates of the (`2`-dimensional) `p` point
 relative to the domain simplex `[[-1.5, 0], [2.5, 0], [0.5, sqrt(3)]]`.
 """
 function tosimplex(p)
@@ -960,20 +960,19 @@ function compose(S, f)
 end
 
 """
-    successor(i)
+    successor!(i)
 
-Returns the next multi-index in lexicographic order.
-Returns nothing when called for the maximum index.
+Destructively changes `i` to the next multi-index in lexicographic order, and returns it.
+Returns `nothing` when called with the maximum index.
 """
-function successor(i)
+function successor!(i)
     p = findlast(x -> x != 0, i)
     p == 1 && return nothing
-    j = copy(i)
-    v = j[p]
-    j[p-1] += 1
-    j[p] = 0
-    j[end] = v - 1
-    j
+    v = i[p]
+    i[p-1] += 1
+    i[p] = 0
+    i[end] = v - 1
+    i
 end
 
 """
@@ -985,22 +984,22 @@ As in: T. DeRose et al., Functional composition algorithms via blossoming.
 ACM ToG 12(2), pp. 113-135, 1993.
 """
 function compose_fast(F, G)
-    function eval_blossom_arg!(Vbar, p, u)
-        n, d = Vbar.n, Vbar.d
+    function eval_blossom_arg!(Fbar, p, u)
+        n, d = Fbar.n, Fbar.d
         for i in indices(n, d - p)
-            Vbar[[p;i]] = sum(j -> Vbar[[p-1;inc_index(i, j)]] * u[j], 1:n)
+            Fbar[[p;i]] = sum(j -> Fbar[[p-1;inc_index(i,j)]] * u[j], 1:n)
         end
     end
     function recursive_compose!(Fbar, G, H, n, m, s, c, mu)
         if n == Fbar.d
             H[s] += Fbar[[n;zeros(Int,Fbar.n)]] * c
         else
-            i = m
+            i = copy(m)
             while i != nothing
                 eval_blossom_arg!(Fbar, n + 1, G[i])
                 mu = i == m ? mu + 1 : 1
                 recursive_compose!(Fbar, G, H, n + 1, i, s + i, c * multinomial(i) / mu, mu)
-                i = successor(i)
+                i = successor!(i)
             end
         end
     end
@@ -1031,7 +1030,7 @@ end
 """
     quadify(surf)
 
-Converts an arbitrary S-patch into a 4-sided S-patch.
+Converts an arbitrary S-patch into a 4-sided rational S-patch.
 """
 function quadify(surf)
     n = surf.n
@@ -1039,11 +1038,15 @@ function quadify(surf)
 
     # Helper functions
     poly = regularpoly(n)
-    polarization(p) = barycentric(poly, sum(p) / (n - 2))
-    # Does not work for n > 4, because the barycentric coordinates are rational,
-    # and can only be expressed with multiprojective polarization, which would
-    # (of course) propagate the "rationalness" down to the resulting tensor product patch.
-    points(i) = reduce(vcat, [repeat([fromsimplex(s)], j)
+    dist(i, q) = line_point_distance(poly[i], poly[mod1(i+1,n)], q)
+    function polarization(p)
+        one(i) = prod(1:n) do k
+            (k == i || k == mod1(i - 1, n)) && return 1.0
+            dist(k, sum(p) / (n - 2))
+        end
+        [one(i) for i in 1:n]
+    end
+    points(i) = reduce(vcat, [repeat([fromsimplex(s)], j) 
                               for (s, j) in zip([[1.,0,0], [0,1,0], [0,0,1]], i)])
 
     # Setup the simplexes
@@ -1052,22 +1055,27 @@ function quadify(surf)
                           [0,0,1,0] => tosimplex([1.0, 0.0]),
                           [0,0,0,1] => tosimplex([0.0, 0.0])))
     L = SPatch(3, n - 2, Dict([i => polarization(points(i)) for i in indices(3, n - 2)]))
-    @time compose_fast(surf, compose_fast(L, A))
+    B = SPatch(surf.n, surf.d, Dict([i => [p; 1.0 - sum(p)] for (i, p) in surf.cpts]))
+    @time compose_fast(B, compose_fast(L, A))
 end
 
 """
     tensor(surf)
 
-Covnerts a 4-sided S-patch into a tensor product Bézier patch.
+Covnerts a 4-sided rational S-patch into a tensor product rational Bézier patch.
 """
 function tensor(surf)
     @assert surf.n == 4 "Only 4-sided S-patches can be directly converted to tensor product form"
     d = surf.d
-    result = zeros(d + 1, d + 1, 3)
+    result = zeros(d + 1, d + 1, 4)
     for (si, p) in surf.cpts
         i = si[2] + si[3]
         j = si[3] + si[4]
         result[i+1,j+1,:] += p * multinomial(si) / (binomial(d, i) * binomial(d, j))
+    end
+    # Change between the two kinds of homogeneous coordinates
+    for i in 0:d, j in 0:d
+        result[i+1,j+1,end] = sum(result[i+1,j+1,:])
     end
     result
 end
@@ -1087,8 +1095,6 @@ The function outputs several files:
 - `name`-bezier-cnet.obj [the original GB ribbons]
 - `name`-cnet.obj [the S-patch control net]
 - `name`.obj [the S-patch surface mesh]
-- `name`-quad-cnet.obj [the 4-sided S-patch control net]
-- `name`-quad.obj [the 4-sided S-patch]
 - `name`-tensor-cnet.obj [the tensor product control net]
 - `name`-tensor.obj [the trimmed tensor product patch]
 - `name`-tensor-full.obj [the whole tensor product patch]
@@ -1107,8 +1113,6 @@ function tensor_test(name, resolution, g1_continuity = true)
     g1_continuity && write_bezier_cnet(ribbons, "$name-bezier-cnet.obj")
     write_cnet(surf, "$name-cnet.obj")
     write_surface(surf, "$name.obj", resolution)
-    write_cnet(quad, "$name-quad-cnet.obj")
-    write_surface(quad, "$name-quad.obj", resolution)
     write_tensor_cnet(tsurf, "$name-tensor-cnet.obj")
     write_tensor(tsurf, surf.n, "$name-tensor.obj", resolution)
     write_tensor(tsurf, 0, "$name-tensor-full.obj", resolution)
