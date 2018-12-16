@@ -650,6 +650,26 @@ function write_bezier_cnet(ribbons, filename)
 end
 
 """
+    bernstein_all(n, u)
+
+Evaluates all Bernstein polynomials of degree `n` at `u`.
+The result is a vector of `n+1` elements.
+"""
+function bernstein_all(n, u)
+    coeff = [1.0]
+    for j in 1:n
+        saved = 0.0
+        for k in 1:j
+            tmp = coeff[k]
+            coeff[k] = saved + tmp * (1.0 - u)
+            saved = tmp * u
+        end
+        push!(coeff, saved)
+    end
+    coeff
+end
+
+"""
     evaltensor(surf, uv)
 
 Evaluates a tensor product rational Bézier surface at the given parameters.
@@ -657,10 +677,11 @@ The surface is given as 3D array where `surf[i,j,:]` is one control point.
 """
 function evaltensor(surf, uv)
     d = size(surf, 1) - 1
-    bernstein(k, x) = binomial(d, k) * x ^ k * (1 - x) ^ (d - k)
+    coeff_u = bernstein_all(d, uv[1])
+    coeff_v = bernstein_all(d, uv[2])
     result = [0, 0, 0, 0]
     for i in 0:d, j in 0:d
-        result += surf[i+1,j+1,:] * bernstein(i, uv[1]) * bernstein(j, uv[2])
+        result += surf[i+1,j+1,:] * coeff_u[i+1] * coeff_v[j+1]
     end
     result[1:3] / result[4]
 end
@@ -1034,7 +1055,7 @@ Converts an arbitrary S-patch into a 4-sided rational S-patch.
 """
 function quadify(surf)
     n = surf.n
-    n == 4 && return surf
+    n == 4 && return SPatch(surf.n, surf.d, Dict([i => [p; 1.0] for (i, p) in surf.cpts])))
 
     # Helper functions
     poly = regularpoly(n)
@@ -1056,7 +1077,11 @@ function quadify(surf)
                           [0,0,0,1] => tosimplex([0.0, 0.0])))
     L = SPatch(3, n - 2, Dict([i => polarization(points(i)) for i in indices(3, n - 2)]))
     B = SPatch(surf.n, surf.d, Dict([i => [p; 1.0 - sum(p)] for (i, p) in surf.cpts]))
-    @time compose_fast(B, compose_fast(L, A))
+    @time S = compose_fast(B, compose_fast(L, A))
+    for (i, p) in S.cpts
+        S[i][end] = sum(p)   # change between the two kinds of homogeneous coordinates
+    end
+    S
 end
 
 """
@@ -1072,10 +1097,6 @@ function tensor(surf)
         i = si[2] + si[3]
         j = si[3] + si[4]
         result[i+1,j+1,:] += p * multinomial(si) / (binomial(d, i) * binomial(d, j))
-    end
-    # Change between the two kinds of homogeneous coordinates
-    for i in 0:d, j in 0:d
-        result[i+1,j+1,end] = sum(result[i+1,j+1,:])
     end
     result
 end
@@ -1095,6 +1116,7 @@ The function outputs several files:
 - `name`-bezier-cnet.obj [the original GB ribbons]
 - `name`-cnet.obj [the S-patch control net]
 - `name`.obj [the S-patch surface mesh]
+- `name`-quad.obj [the quadrilateral S-patch]
 - `name`-tensor-cnet.obj [the tensor product control net]
 - `name`-tensor.obj [the trimmed tensor product patch]
 - `name`-tensor-full.obj [the whole tensor product patch]
@@ -1107,6 +1129,7 @@ function tensor_test(name, resolution, g1_continuity = true)
     println("Quadifying...")
     quad = quadify(surf)
     println("d = $(quad.d)")
+    write_surface_rat(quad, "$name-quad.obj", resolution)
     println("Creating tensor product patch...")
     tsurf = tensor(quad)
     println("Writing meshes...")
