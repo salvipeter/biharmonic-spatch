@@ -871,24 +871,20 @@ end
 """
     tosimplex(p)
 
-Returns the barycentric coordinates of the (`2`-dimensional) `p` point
-relative to the domain simplex `[[-1.5, 0], [2.5, 0], [0.5, sqrt(3)]]`.
+Returns the barycentric coordinates of the (`n`-dimensional) `p` point
+relative to the domain simplex consisting of the origin and the unit
+points on the axes, i.e., [1,0,..,0], [0,1,0,..,0], .., [0,..,0,1].
 """
-function tosimplex(p)
-    triangle = [[-1.5, 0], [2.5, 0], [0.5, sqrt(3)]]
-    barycentric(triangle, p)
-end
+tosimplex(p) = [1 - sum(p); p]
 
 """
     fromsimplex(bc)
 
 Returns the coordinates of the point with barycentric coordinates `bc`
-relative to the domain simplex `[[-1.5, 0], [2.5, 0], [0.5, sqrt(3)]]`.
+relative to the domain simplex consisting of the origin and the unit
+points on the axes, i.e., [1,0,..,0], [0,1,0,..,0], .., [0,..,0,1].
 """
-function fromsimplex(bc)
-    triangle = [[-1.5, 0], [2.5, 0], [0.5, sqrt(3)]]
-    sum(triangle .* bc)
-end
+fromsimplex(bc) = bc[2:end]
 
 """
     inc_index(index, j, [n])
