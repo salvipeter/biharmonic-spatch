@@ -78,7 +78,7 @@
 \begin_body
 
 \begin_layout Title
-CAD-compatible conversion of S-patches made easy
+On the CAD-compatible conversion of S-patches
 \end_layout
 
 \begin_layout Author
@@ -107,8 +107,15 @@ Budapest University of Technology and Economics
 \end_layout
 
 \begin_layout Abstract
-S-patches are ...
- blabla
+S-patches have many nice mathematical properties.
+ It is known since their first appearance, that any regular S-patch can
+ be exactly converted into a trimmed rational Bézier surface.
+ This is a big advantage compared to other multi-sided surface representations
+ that have to be approximated to be exported into CAD/CAM systems.
+ The conversion process, however, remained on the theoretical level, with
+ bits and pieces scattered in multiple publications.
+ In this paper we review the entirety of the algorithm, and investigate
+ it from a practical aspect.
 \end_layout
 
 \begin_layout Section
@@ -122,31 +129,18 @@ Introduction
 \end_layout
 
 \begin_layout Standard
-Bla
-\begin_inset CommandInset citation
-LatexCommand cite
-key "DeRose:1988"
-literal "false"
+S-patches offer a mathematically perfect generalization of Bézier surfaces
+ to any number of sides.
+ The three-sided S-patch – the Bézier triangle – is widely adopted, but
+ there is yet no standard representation for surfaces with more than four
+ sides.
+\end_layout
 
-\end_inset
-
- bla
-\begin_inset CommandInset citation
-LatexCommand cite
-key "DeRose:1993"
-literal "false"
-
-\end_inset
-
- bla
-\begin_inset CommandInset citation
-LatexCommand cite
-key "Loop:1989"
-literal "false"
-
-\end_inset
-
- bla
+\begin_layout Standard
+The lack of success for S-patches may be due to their complex control net
+ structure, and the large number of control points.
+ These, as it turns out, can be circumvented by the automatic generation
+ of the control network using only boundary constraints.
 \begin_inset CommandInset citation
 LatexCommand cite
 key "Salvi:2019:KEPAF"
@@ -155,6 +149,107 @@ literal "false"
 \end_inset
 
 
+\end_layout
+
+\begin_layout Standard
+Another common issue with 
+\begin_inset Formula $n$
+\end_inset
+
+-sided surface representations is the conversion to tensor product patches,
+ which is crucial for the processing of the model in CAD/CAM systems.
+ Usually some fitting method is used, which either creates 
+\begin_inset Formula $n$
+\end_inset
+
+ quadrilaterals sharing a central vertex,
+\begin_inset CommandInset citation
+LatexCommand cite
+key "Piegl:1999"
+literal "false"
+
+\end_inset
+
+ or a larger four-sided region with approximated trimming curves.
+ The former loses the 
+\begin_inset Formula $C^{\infty}$
+\end_inset
+
+ continuity inside the patch, while the latter has an inherent asimmetry,
+ as well as parameterization issues.
+\begin_inset CommandInset citation
+LatexCommand cite
+key "Vaitkus:2018"
+literal "false"
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Here S-patches seem to have an advantage: it is shown in the original paper
+\begin_inset CommandInset citation
+LatexCommand cite
+key "Loop:1989"
+literal "false"
+
+\end_inset
+
+ that any regular S-patch can be exactly converted into a trimmed rational
+ Bézier surface.
+ The algorithm for this was not described in detail, however, so in this
+ paper we will go through all the required steps.
+\end_layout
+
+\begin_layout Standard
+In Section
+\begin_inset space ~
+\end_inset
+
+
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "sec:Previous-Work"
+plural "false"
+caps "false"
+noprefix "false"
+
+\end_inset
+
+ we will briefly review the related publications.
+ In Section
+\begin_inset space ~
+\end_inset
+
+
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "sec:S-patches"
+plural "false"
+caps "false"
+noprefix "false"
+
+\end_inset
+
+ we will define the S-patch both in itself, and as the composition of Bézier
+ simplexes.
+ Then the conversion process is described in Section
+\begin_inset space ~
+\end_inset
+
+
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "sec:Conversion-to-quadrilateral"
+plural "false"
+caps "false"
+noprefix "false"
+
+\end_inset
+
+.
+ A few examples and a discussion conclude the paper.
 \end_layout
 
 \begin_layout Section
@@ -168,7 +263,48 @@ Previous Work
 \end_layout
 
 \begin_layout Standard
-Bla
+S-patches were first published by Loop and DeRose
+\begin_inset CommandInset citation
+LatexCommand cite
+key "Loop:1989"
+literal "false"
+
+\end_inset
+
+ in 1989, but the techniques involved in the conversion process were developed
+ earlier: see Ramshaw's wonderful book
+\begin_inset CommandInset citation
+LatexCommand cite
+key "Ramshaw:1987"
+literal "false"
+
+\end_inset
+
+ on blossoming, and DeRose's paper
+\begin_inset CommandInset citation
+LatexCommand cite
+key "DeRose:1988"
+literal "false"
+
+\end_inset
+
+ on the composition of Bézier simplexes.
+ A more efficient variation
+\begin_inset CommandInset citation
+LatexCommand cite
+key "DeRose:1993"
+literal "false"
+
+\end_inset
+
+ of the latter was developed a few years later.
+\end_layout
+
+\begin_layout Standard
+This work offers little novelty.
+ In the following sections, we will try to connect the dots, and insert
+ a few missing pieces, to make the tensor product conversion easy to understand
+ and implement.
 \end_layout
 
 \begin_layout Section
@@ -186,19 +322,29 @@ An
 \begin_inset Formula $n$
 \end_inset
 
--sided S-patch is defined over a regular 
+-sided S-patch
+\begin_inset Foot
+status open
+
+\begin_layout Plain Layout
+This paper deals only with 
+\emph on
+regular
+\emph default
+ S-patches, as only these have the required properties for conversion.
+\end_layout
+
+\end_inset
+
+ is defined over a regular 
 \begin_inset Formula $n$
 \end_inset
 
--gon, parameterized by barycentric coordinates 
+-gon, parameterized by Wachspress barycentric coordinates 
 \begin_inset Formula $\boldsymbol{\lambda}=(\lambda_{1},\dots,\lambda_{n})$
 \end_inset
 
-, e.g.
-\begin_inset space ~
-\end_inset
-
-Wachspress or mean value coordinates
+.
 \begin_inset CommandInset citation
 LatexCommand cite
 key "Hormann:2006"
@@ -206,7 +352,6 @@ literal "false"
 
 \end_inset
 
-.
  Its control points 
 \begin_inset Formula $\{P\}$
 \end_inset
@@ -215,7 +360,7 @@ literal "false"
 \begin_inset Formula $n$
 \end_inset
 
- non-negative integers whose sum is the degree of the surface (
+ non-negative integers whose sum is the depth of the surface (
 \begin_inset Formula $d$
 \end_inset
 
@@ -229,6 +374,11 @@ literal "false"
 \end_inset
 
  for one particular label.
+ The norm of a label is its sum, i.e., 
+\begin_inset Formula $|\mathbf{s}|=d$
+\end_inset
+
+.
 \end_layout
 
 \begin_layout Standard
@@ -240,7 +390,7 @@ The surface point corresponding to a domain point with barycentric coordinates
  is defined as
 \begin_inset Formula 
 \begin{equation}
-S(\boldsymbol{\lambda})=\sum_{\mathbf{s}\in L_{n,d}}P_{\mathbf{s}}\cdot B_{\mathbf{s}}^{d}(\boldsymbol{\lambda})=\sum_{\mathbf{s}\in L_{n,d}}P_{\mathbf{s}}\cdot\frac{d!}{\prod_{i=1}^{n}s_{i}!}\cdot\prod_{i=1}^{n}\lambda_{i}^{s_{i}},\label{eq:spatch}
+S(\boldsymbol{\lambda})=\sum_{\mathbf{s}\in L_{n,d}}P_{\mathbf{s}}\cdot B_{\mathbf{s}}^{d}(\boldsymbol{\lambda})=\sum_{\mathbf{s}\in L_{n,d}}P_{\mathbf{s}}\cdot\binom{d}{\mathbf{s}}\cdot\prod_{i=1}^{n}\lambda_{i}^{s_{i}},\label{eq:spatch}
 \end{equation}
 
 \end_inset
@@ -249,27 +399,772 @@ where
 \begin_inset Formula $B_{\mathbf{s}}^{d}(\boldsymbol{\lambda})$
 \end_inset
 
- are Bernstein polynomials with multinomial coefficients.
+ are Bernstein polynomials, and
+\begin_inset Formula 
+\begin{equation}
+\binom{d}{\mathbf{s}}=\frac{d!}{\prod_{i=1}^{n}s_{i}!}
+\end{equation}
+
+\end_inset
+
+are their multinomial coefficients.
+\end_layout
+
+\begin_layout Subsection
+S-patches as Bézier simplexes
+\end_layout
+
+\begin_layout Standard
+An 
+\begin_inset Formula $n-1$
+\end_inset
+
+-dimensional simplex has 
+\begin_inset Formula $n$
+\end_inset
+
+ vertices 
+\begin_inset Formula $V_{i}$
+\end_inset
+
+ (e.g.
+\begin_inset space ~
+\end_inset
+
+in 2D a triangle, in 3D a tetrahedron).
+ Any point can be uniquely expressed by the affine combination of these
+ vertices:
+\begin_inset Formula 
+\begin{equation}
+p=\sum_{i=1}^{n}\lambda_{i}V_{i},\quad\sum_{i=1}^{n}\lambda_{i}=1.
+\end{equation}
+
+\end_inset
+
+The coefficients 
+\begin_inset Formula $\lambda_{i}$
+\end_inset
+
+ are called the barycentric coordinates of 
+\begin_inset Formula $p$
+\end_inset
+
+ relative to the simplex.
+\end_layout
+
+\begin_layout Standard
+A Bézier simplex of dimension 
+\begin_inset Formula $n-1$
+\end_inset
+
+ and degree 
+\begin_inset Formula $d$
+\end_inset
+
+ is a polynomial mapping from the barycentric coordinates relative to an
+ 
+\begin_inset Formula $n-1$
+\end_inset
+
+-dimensional simplex, given in Bernstein form:
+\begin_inset Formula 
+\begin{equation}
+\sum_{\mathbf{s}\in L_{n,d}}P_{\mathbf{s}}\cdot B_{\mathbf{s}}^{d}(\boldsymbol{\lambda}),
+\end{equation}
+
+\end_inset
+
+where 
+\begin_inset Formula $P_{\mathbf{s}}$
+\end_inset
+
+ are called the control points of the Bézier simplex.
+ We can see that this is the same as Eq.
+\begin_inset space ~
+\end_inset
+
+(
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "eq:spatch"
+plural "false"
+caps "false"
+noprefix "false"
+
+\end_inset
+
+), i.e., the S-patch is a Bézier simplex that maps from an 
+\begin_inset Formula $n-1$
+\end_inset
+
+-dimensional simplex (
+\begin_inset Formula $n$
+\end_inset
+
+ barycentric coordinates) to 3D.
+\end_layout
+
+\begin_layout Standard
+Let us introduce the following notations for a Bézier simplex 
+\begin_inset Formula $S$
+\end_inset
+
+:
+\end_layout
+
+\begin_layout Itemize
+\begin_inset Formula $n_{S}$
+\end_inset
+
+ : number of arguments (i.e., the dimension of the domain simplex + 1)
+\end_layout
+
+\begin_layout Itemize
+\begin_inset Formula $d_{S}$
+\end_inset
+
+ : degree
+\end_layout
+
+\begin_layout Itemize
+\begin_inset Formula $\delta_{S}$
+\end_inset
+
+ : dimension of the control points
+\end_layout
+
+\begin_layout Standard
+These form the characteristic triple 
+\begin_inset Formula $\phi(S)=(n_{S},d_{S},\delta_{S})$
+\end_inset
+
+.
+ For example, for an 
+\begin_inset Formula $n$
+\end_inset
+
+-sided S-patch of depth 
+\begin_inset Formula $d$
+\end_inset
+
+, 
+\begin_inset Formula $\phi(S)=(n,d,3)$
+\end_inset
+
+.
 \end_layout
 
 \begin_layout Section
+\begin_inset CommandInset label
+LatexCommand label
+name "sec:Conversion-to-quadrilateral"
+
+\end_inset
+
+Conversion to trimmed Bézier patches
+\end_layout
+
+\begin_layout Standard
+According to the original paper,
+\begin_inset CommandInset citation
+LatexCommand cite
+key "Loop:1989"
+literal "false"
+
+\end_inset
+
+ any 
+\begin_inset Formula $n$
+\end_inset
+
+-sided S-patch of depth 
+\begin_inset Formula $d$
+\end_inset
+
+ can be converted into an 
+\begin_inset Formula $m$
+\end_inset
+
+-sided rational S-patch of depth 
+\begin_inset Formula $(n-2)d$
+\end_inset
+
+.
+ Also, a four-sided S-patch of depth 
+\begin_inset Formula $d$
+\end_inset
+
+ can be converted into a tensor product Bézier patch of degree 
+\begin_inset Formula $d$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+Consequently, the conversion is done in two stages.
+ First the 
+\begin_inset Formula $n$
+\end_inset
+
+-sided S-patch is replaced with a four-sided one (Section
+\begin_inset space ~
+\end_inset
+
+
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "subsec:Conversion-to-quadrilateral"
+plural "false"
+caps "false"
+noprefix "false"
+
+\end_inset
+
+), then the tensor product form is computed (Section
+\begin_inset space ~
+\end_inset
+
+
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "subsec:Conversion-to-tensor"
+plural "false"
+caps "false"
+noprefix "false"
+
+\end_inset
+
+), resulting in a surface of degree 
+\begin_inset Formula $(n-2)d$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Subsection
+\begin_inset CommandInset label
+LatexCommand label
+name "subsec:Conversion-to-quadrilateral"
+
+\end_inset
+
 Conversion to quadrilateral S-patches
 \end_layout
 
 \begin_layout Standard
-Blabla
+The Wachspress coordinates of an 
+\begin_inset Formula $n$
+\end_inset
+
+-sided regular polygon have the form
+\begin_inset Formula 
+\begin{equation}
+\lambda_{i}(p)=\frac{\prod_{j\neq i-1,i}D_{j}(p)}{\sum_{k=1}^{n}\prod_{j\neq k-1,k}D_{j}(p)},
+\end{equation}
+
+\end_inset
+
+where 
+\begin_inset Formula $D_{j}(p)$
+\end_inset
+
+ is the distance of 
+\begin_inset Formula $p$
+\end_inset
+
+ from the 
+\begin_inset Formula $j$
+\end_inset
+
+-th side.
 \end_layout
 
-\begin_layout Subsection
+\begin_layout Standard
+When 
+\begin_inset Formula $p$
+\end_inset
+
+ is given by barycentric coordinates, this can also be expressed as a rational
+ Bézier simplex 
+\begin_inset Formula $W_{n}$
+\end_inset
+
+, that maps from a 2D simplex to a simplex of dimension 
+\begin_inset Formula $n-1$
+\end_inset
+
+.
+ This is not an obvious result, since it involves Euclidean distances.
+ For the exact construction, and the handling of rational simplexes, see
+ Section
+\begin_inset space ~
+\end_inset
+
+
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "subsec:Polarization"
+plural "false"
+caps "false"
+noprefix "false"
+
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+It is also shown that 
+\begin_inset Formula $W_{n}$
+\end_inset
+
+ is 
+\emph on
+pseudoaffine
+\emph default
+, i.e., it has an affine left inverse 
+\begin_inset Formula $W_{n}^{-1}$
+\end_inset
+
+.
+ With this, we can write
+\begin_inset Formula 
+\begin{equation}
+S\circ W_{n}=S\circ W_{n}\circ(W_{4}^{-1}\circ W_{4})=(S\circ W_{n}\circ W_{4}^{-1})\circ W_{4}.
+\end{equation}
+
+\end_inset
+
+In other words, the four-sided version of the 
+\begin_inset Formula $n$
+\end_inset
+
+-sided depth 
+\begin_inset Formula $d$
+\end_inset
+
+ S-patch 
+\begin_inset Formula $S$
+\end_inset
+
+ is the composition of three Bézier simplexes, with the following characteristic
+ triples: 
+\begin_inset Formula $\phi(W_{4}^{-1})=(4,1,3)$
+\end_inset
+
+, 
+\begin_inset Formula $\phi(W_{n})=(3,n-2,n)$
+\end_inset
+
+, and 
+\begin_inset Formula $\phi(S)=(n,d,4)$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+For the 2D simplex, we can use the triangle 
+\begin_inset Formula $(0,0)$
+\end_inset
+
+, 
+\begin_inset Formula $(1,0)$
+\end_inset
+
+, 
+\begin_inset Formula $(0,1)$
+\end_inset
+
+, so the barycentric coordinates for an 
+\begin_inset Formula $(u,v)$
+\end_inset
+
+ point will be 
+\begin_inset Formula $(1-u-v,u,v)$
+\end_inset
+
+.
+ Since the tensor product patch will be defined on 
+\begin_inset Formula $[0,1]\times[0,1]$
+\end_inset
+
+, we will use the same square as the image of the 3D simplex.
+ Thus the control points of 
+\begin_inset Formula $W_{4}^{-1}$
+\end_inset
+
+ are:
+\begin_inset Formula 
+\begin{align}
+P_{1000} & =(0,0,1), & P_{0100} & =(-1,1,1),\nonumber \\
+P_{0010} & =(0,1,0), & P_{0001} & =(1,0,0).
+\end{align}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Getting the control points of 
+\begin_inset Formula $W_{n}$
+\end_inset
+
+ needs a bit more work, see the next section.
+\end_layout
+
+\begin_layout Standard
+The control points of 
+\begin_inset Formula $S$
+\end_inset
+
+ are just the control points of the original 
+\begin_inset Formula $n$
+\end_inset
+
+-sided S-patch.
+ The astute reader must have noticed that 
+\begin_inset Formula $\delta_{S}=4$
+\end_inset
+
+.
+ This is because 
+\begin_inset Formula $W_{n}$
+\end_inset
+
+ is rational, and the composition algorithm needs 
+\begin_inset Formula $S$
+\end_inset
+
+ to be also in homogenized barycentric form.
+\end_layout
+
+\begin_layout Subsubsection
+\begin_inset CommandInset label
+LatexCommand label
+name "subsec:Polarization"
+
+\end_inset
+
+Polarization of the Wachspress coordinates
+\end_layout
+
+\begin_layout Standard
+Homogenous coordinates are normally represented by adding an extra ``weight''
+ coordinate, so 
+\begin_inset Formula $(x,y,z)\equiv(wx,wy,wz,w)$
+\end_inset
+
+, and projection works by dividing with the weight.
+ With Bézier simplexes, we use another type of homogenization, that allows
+ us to use the simplex composition algorithm as it is, even for the rational
+ case.
+ Here 
+\begin_inset Formula $(x,y,z)\equiv(x,y,z,1-x-y-z)$
+\end_inset
+
+, and projection is done by dividing with the sum of all coordinates.
+ Since barycentric coordinates sum to one, there is no need for an extra
+ weight coordinate.
+\end_layout
+
+\begin_layout Standard
+The homogenized form of the Wachspress coordinates is thus 
+\begin_inset Formula $\prod_{j\neq i-1,i}D_{j}(p)$
+\end_inset
+
+.
+ We will work out the Bézier simplex coordinates for this by using its 
+\emph on
+blossom
+\emph default
+ or polarization.
+ For any homogeneous polynomial 
+\begin_inset Formula $Q(u)$
+\end_inset
+
+ of degree 
+\begin_inset Formula $d$
+\end_inset
+
+, there is a symmetric multilinear function 
+\begin_inset Formula $q$
+\end_inset
+
+ of 
+\begin_inset Formula $d$
+\end_inset
+
+ arguments that agrees with it on its diagonal:
+\begin_inset Formula 
+\begin{align}
+q(u_{1},\dots,u_{d}) & =q(u_{\pi_{1}},\dots,u_{\pi_{d}}),\label{eq:symmetry}\\
+q(u_{1},\dots,\alpha u_{k_{1}}+\beta u_{k_{2}},\dots,u_{d}) & =\alpha q(u_{1},\dots,u_{k_{1}},\dots,u_{d})\nonumber \\
+ & +\beta q(u_{1},\dots,u_{k_{2}},\dots,u_{d}),\label{eq:multilinearity}\\
+q(u,\dots,u) & =Q(u).\label{eq:agreement}
+\end{align}
+
+\end_inset
+
+Eq.
+\begin_inset space ~
+\end_inset
+
+(
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "eq:symmetry"
+plural "false"
+caps "false"
+noprefix "false"
+
+\end_inset
+
+) shows symmetry, Eq.
+\begin_inset space ~
+\end_inset
+
+(
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "eq:multilinearity"
+plural "false"
+caps "false"
+noprefix "false"
+
+\end_inset
+
+) multilinearity, and Eq.
+\begin_inset space ~
+\end_inset
+
+(
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "eq:agreement"
+plural "false"
+caps "false"
+noprefix "false"
+
+\end_inset
+
+) the diagonal agreement.
+\end_layout
+
+\begin_layout Standard
+The rational Bézier simplex control points for 
+\begin_inset Formula $Q$
+\end_inset
+
+ are easily computed from its polarization:
+\begin_inset Formula 
+\begin{equation}
+P_{\mathbf{s}}=q(\underbrace{V_{1},\dots,V_{1}}_{s_{1}},\underbrace{V_{2},\dots,V_{2}}_{s_{2}},\dots,\underbrace{V_{n},\dots,V_{n}}_{s_{n}}),\label{eq:blossom}
+\end{equation}
+
+\end_inset
+
+where 
+\begin_inset Formula $V_{i}$
+\end_inset
+
+ are points of the domain simplex.
+\end_layout
+
+\begin_layout Standard
+The blossom of Wachspress coordinates for a regular 
+\begin_inset Formula $n$
+\end_inset
+
+-gon is given as
+\begin_inset Formula 
+\begin{equation}
+q(p_{1},\dots,p_{n-2})=\frac{1}{(n-2)!}\cdot\sum_{\pi\in\Pi(n-2)}\prod_{\substack{k=1\\
+j\neq i-1,i
+}
+}^{n-2}D_{j}(p_{\pi_{k}}),
+\end{equation}
+
+\end_inset
+
+where 
+\begin_inset Formula $\Pi(n-2)$
+\end_inset
+
+ is the set of permutations of 
+\begin_inset Formula $\{1,\dots,n-2\}$
+\end_inset
+
+, and in the product 
+\begin_inset Formula $k$
+\end_inset
+
+ goes from 
+\begin_inset Formula $1$
+\end_inset
+
+ to 
+\begin_inset Formula $n-2$
+\end_inset
+
+ while 
+\begin_inset Formula $j$
+\end_inset
+
+ goes from 
+\begin_inset Formula $1$
+\end_inset
+
+ to 
+\begin_inset Formula $n$
+\end_inset
+
+ skipping 
+\begin_inset Formula $i-1$
+\end_inset
+
+ and 
+\begin_inset Formula $i$
+\end_inset
+
+.
+ Now Eq.
+\begin_inset space ~
+\end_inset
+
+(
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "eq:blossom"
+plural "false"
+caps "false"
+noprefix "false"
+
+\end_inset
+
+) can be used to compute the coordinates of 
+\begin_inset Formula $W_{n}$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+The exact position and rotation of the 
+\begin_inset Formula $n$
+\end_inset
+
+-sided polygon affect the quality of the generated control net.
+ A good choice is to use cyclic polygons of the circle with origin 
+\begin_inset Formula $(0.5,0.5)$
+\end_inset
+
+ and radius 
+\begin_inset Formula $0.5$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Subsubsection
 Simplex composition
+\end_layout
+
+\begin_layout Standard
+Now that all three of theBézier simplexes are well-defined, we can turn
+ our attention to their composition.
+ Let 
+\begin_inset Formula $F$
+\end_inset
+
+ and 
+\begin_inset Formula $G$
+\end_inset
+
+ denote Bézier simplexes.
+ Then
+\begin_inset Formula 
+\begin{equation}
+\phi(F\circ G)=\left(n_{G},d_{F}\cdot d_{G},\delta_{F}\right),
+\end{equation}
+
+\end_inset
+
+and the control points are given by
+\begin_inset Formula 
+\begin{equation}
+P_{\mathbf{s}}=\sum_{\substack{|\mathbf{s}_{1}|+|\mathbf{s}_{2}|+\dots+|\mathbf{s}_{d_{F}}|=d_{G}\\
+\mathbf{s}_{1}+\mathbf{s}_{2}+\dots+\mathbf{s}_{d_{F}}=\mathbf{s}
+}
+}\frac{\binom{k}{\mathbf{s}_{1}}\cdots\binom{k}{\mathbf{s}_{d_{F}}}}{\binom{kd_{F}}{\mathbf{s}}}\Delta_{\mathbf{0}_{n_{F}}}(P_{\mathbf{s}_{1}}^{G},\dots,P_{\mathbf{s}_{d_{F}}}^{G}),
+\end{equation}
+
+\end_inset
+
+where 
+\begin_inset Formula $\mathbf{0}_{n_{F}}$
+\end_inset
+
+ is a multi-index of length 
+\begin_inset Formula $n_{F}$
+\end_inset
+
+ consisting entirely of zeros, and
+\begin_inset Formula 
+\begin{equation}
+\Delta_{\mathbf{s}}(p_{1},\dots,p_{l})=\begin{cases}
+\sum_{\alpha=0}^{n_{F}}p_{1}^{\alpha}P_{\mathbf{s}+\mathbf{e}_{\alpha}}^{F} & \text{if }l=1,\\
+\sum_{\alpha=0}^{n_{F}}p_{l}^{\alpha}\Delta_{\mathbf{s}+\mathbf{e}_{\alpha}}(p_{1},\dots,p_{l-1}). & \text{otherwise.}
+\end{cases}
+\end{equation}
+
+\end_inset
+
+Here 
+\begin_inset Formula $p_{i}^{\alpha}$
+\end_inset
+
+ is the 
+\begin_inset Formula $i$
+\end_inset
+
+-th coordinate of 
+\begin_inset Formula $p_{i}$
+\end_inset
+
+, and 
+\begin_inset Formula $\mathbf{s}+\mathbf{e}_{\alpha}$
+\end_inset
+
+ is the multi-index 
+\begin_inset Formula $\mathbf{s}$
+\end_inset
+
+ with the 
+\begin_inset Formula $\alpha$
+\end_inset
+
+-th position increased by one.
+\end_layout
+
+\begin_layout Subsubsection
+Efficient algorithm
 \end_layout
 
 \begin_layout Standard
 blabla
 \end_layout
 
-\begin_layout Section
-Conversion to tensor product Bézier patches
+\begin_layout Subsection
+\begin_inset CommandInset label
+LatexCommand label
+name "subsec:Conversion-to-tensor"
+
+\end_inset
+
+Conversion to tensor product form
 \end_layout
 
 \begin_layout Standard
@@ -287,15 +1182,203 @@ Examples
 \end_layout
 
 \begin_layout Standard
-Bla
+...
+ converted into a 
+\begin_inset Formula $15\times15$
+\end_inset
+
+-degree tensor product rational Bézier patch.
+ The example model was generated by the ribbon-based algorithm of the author.
+\begin_inset CommandInset citation
+LatexCommand cite
+key "Salvi:2019:KEPAF"
+literal "false"
+
+\end_inset
+
+ 
+\begin_inset Float figure
+wide false
+sideways false
+status collapsed
+
+\begin_layout Plain Layout
+\begin_inset Float figure
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\align center
+\begin_inset Graphics
+	filename images/5sided-controlnet.png
+	display false
+	width 100col%
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+S-patch control network
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Float figure
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\align center
+\begin_inset Graphics
+	filename images/5sided-contours.png
+	display false
+	width 100col%
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+Contouring
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Float figure
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\align center
+\begin_inset Graphics
+	filename images/5sided-tensor.png
+	display false
+	width 100col%
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+Trimmed patch with control net
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Float figure
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\align center
+\begin_inset Graphics
+	filename images/5sided-tensor-full.png
+	display false
+	width 100col%
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+Full tensor product patch
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+\begin_inset CommandInset label
+LatexCommand label
+name "fig:A-5-sided-S-patch"
+
+\end_inset
+
+A 5-sided S-patch of depth 5.
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
 \end_layout
 
 \begin_layout Section*
-Conclusion
+Discussion
 \end_layout
 
 \begin_layout Standard
 Bla
+\end_layout
+
+\begin_layout Standard
+Bezier haromszog nem racionalis
 \end_layout
 
 \begin_layout Section*
