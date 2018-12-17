@@ -1049,22 +1049,40 @@ function line_point_distance(l1, l2, p)
 end
 
 """
+    permutations(n)
+
+Returns a vector of all permutations of [1..n].
+"""
+function permutations(n)
+    n == 1 && return [[1]]
+    vcat([map(i -> insert!(copy(p), i, n), 1:n) for p in permutations(n - 1)]...)
+end
+
+"""
     quadify(surf)
 
 Converts an arbitrary S-patch into a 4-sided rational S-patch.
 """
 function quadify(surf)
     n = surf.n
-    n == 4 && return SPatch(surf.n, surf.d, Dict([i => [p; 1.0] for (i, p) in surf.cpts])))
+    n == 4 && return SPatch(surf.n, surf.d, Dict([i => [p; 1.0] for (i, p) in surf.cpts]))
 
     # Helper functions
     poly = regularpoly(n)
     dist(i, q) = line_point_distance(poly[i], poly[mod1(i+1,n)], q)
     function polarization(p)
-        one(i) = prod(1:n) do k
-            (k == i || k == mod1(i - 1, n)) && return 1.0
-            dist(k, sum(p) / (n - 2))
-        end
+        one(i) = sum(permutations(n - 2)) do perm
+            result = 1.0
+            k = 1
+            for j in 1:n-2
+                if k == mod1(i - 1, n) || k == i
+                    k = i + 1
+                end
+                result *= dist(k, p[perm[j]])
+                k += 1
+            end
+            result
+        end / factorial(n - 2)
         [one(i) for i in 1:n]
     end
     points(i) = reduce(vcat, [repeat([fromsimplex(s)], j) 
@@ -1129,13 +1147,13 @@ function tensor_test(name, resolution, g1_continuity = true)
     println("Quadifying...")
     quad = quadify(surf)
     println("d = $(quad.d)")
-    write_surface_rat(quad, "$name-quad.obj", resolution)
     println("Creating tensor product patch...")
     tsurf = tensor(quad)
     println("Writing meshes...")
     g1_continuity && write_bezier_cnet(ribbons, "$name-bezier-cnet.obj")
     write_cnet(surf, "$name-cnet.obj")
     write_surface(surf, "$name.obj", resolution)
+    write_surface_rat(quad, "$name-quad.obj", resolution)
     write_tensor_cnet(tsurf, "$name-tensor-cnet.obj")
     write_tensor(tsurf, surf.n, "$name-tensor.obj", resolution)
     write_tensor(tsurf, 0, "$name-tensor-full.obj", resolution)
