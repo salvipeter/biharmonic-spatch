@@ -1001,31 +1001,30 @@ As in: T. DeRose et al., Functional composition algorithms via blossoming.
 ACM ToG 12(2), pp. 113-135, 1993.
 """
 function compose_fast(F, G)
-    function eval_blossom_arg!(Fbar, p, u)
-        n, d = Fbar.n, Fbar.d
-        for i in indices(n, d - p)
-            Fbar[[p;i]] = sum(j -> Fbar[[p-1;inc_index(i,j)]] * u[j], 1:n)
+    n, d = G.n, F.d * G.d
+    m = length(iterate(F.cpts)[1][2])
+    H = SPatch(n, d, Dict([i => zeros(m) for i in indices(n, d)]))
+    Fbar = [Dict() for _ in 1:F.d+1]
+    Fbar[1] = Dict([i => p for (i, p) in F.cpts])
+    function eval_blossom_arg(p, u)
+        for i in indices(F.n, F.d - p)
+            Fbar[p+1][i] = sum(j -> Fbar[p][inc_index(i,j)] * u[j], 1:F.n)
         end
     end
-    function recursive_compose!(Fbar, G, H, n, m, s, c, mu)
-        if n == Fbar.d
-            H[s] += Fbar[[n;zeros(Int,Fbar.n)]] * c
+    function recursive_compose(k, min, sum, c, mu)
+        if k == F.d
+            H[sum] += Fbar[F.d+1][zeros(Int,F.n)] * c
         else
-            i = copy(m)
+            i = copy(min)
             while i != nothing
-                eval_blossom_arg!(Fbar, n + 1, G[i])
-                mu = i == m ? mu + 1 : 1
-                recursive_compose!(Fbar, G, H, n + 1, i, s + i, c * multinomial(i) / mu, mu)
+                eval_blossom_arg(k + 1, G[i])
+                mu = i == min ? mu + 1 : 1
+                recursive_compose(k + 1, i, sum + i, c * multinomial(i) / mu, mu)
                 i = successor!(i)
             end
         end
     end
-    l, m = G.d, F.d
-    n, d = G.n, l * m
-    H = SPatch(n, d, Dict([i => zeros(length(iterate(F.cpts)[1][2])) for i in indices(n, d)]))
-    Fbar = SPatch(F.n, F.d, Dict([[0; i] => p for (i, p) in F.cpts]))
-    imin = make_index(n, (n, l)) # <- the paper says (n, d), which is clearly wrong
-    recursive_compose!(Fbar, G, H, 0, imin, zeros(Int, n), factorial(F.d), 0)
+    recursive_compose(0, make_index(n, (n, G.d)), zeros(Int, n), factorial(F.d), 0)
     for i in keys(H.cpts)
         H[i] /= multinomial(i)
     end
