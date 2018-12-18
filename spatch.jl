@@ -1018,13 +1018,13 @@ function compose_fast(F, G)
             i = copy(min)
             while i != nothing
                 eval_blossom_arg(k + 1, G[i])
-                mu = i == min ? mu + 1 : 1
-                recursive_compose(k + 1, i, sum + i, c * multinomial(i) / mu, mu)
+                recursive_compose(k + 1, i, sum + i, c * multinomial(i) / mu, mu + 1)
+                mu = 1
                 i = successor!(i)
             end
         end
     end
-    recursive_compose(0, make_index(n, (n, G.d)), zeros(Int, n), factorial(F.d), 0)
+    recursive_compose(0, make_index(n, (n, G.d)), zeros(Int, n), factorial(F.d), 1)
     for i in keys(H.cpts)
         H[i] /= multinomial(i)
     end

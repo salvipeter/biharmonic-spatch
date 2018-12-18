@@ -303,8 +303,22 @@ literal "false"
 \begin_layout Standard
 This work offers little novelty.
  In the following sections, we will try to connect the dots, and insert
- a few missing pieces, to make the tensor product conversion easy to understand
- and implement.
+ a few missing pieces (notably the polarization of Wachspress coordinates
+ in Section
+\begin_inset space ~
+\end_inset
+
+
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "subsec:Polarization"
+plural "false"
+caps "false"
+noprefix "false"
+
+\end_inset
+
+), hopefully making tensor product conversion easy to understand and implement.
 \end_layout
 
 \begin_layout Section
@@ -765,11 +779,18 @@ In other words, the four-sided version of the
 \end_layout
 
 \begin_layout Standard
-For the 2D simplex, we can use the triangle 
-\begin_inset Formula $(0,0)$
-\end_inset
+Let us see how to generate control points for each of these Bézier simplexes.
+ Since we will have to work with barycentric coordinates relative to some
+ simplex, define the 
+\emph on
+canonical simplex
+\emph default
+ as the canonical basis and the origin.
 
-, 
+\emph on
+ 
+\emph default
+For the 2D, this will be the triangle 
 \begin_inset Formula $(1,0)$
 \end_inset
 
@@ -777,15 +798,27 @@ For the 2D simplex, we can use the triangle
 \begin_inset Formula $(0,1)$
 \end_inset
 
+, 
+\begin_inset Formula $(0,0)$
+\end_inset
+
 , so the barycentric coordinates for an 
 \begin_inset Formula $(u,v)$
 \end_inset
 
  point will be 
-\begin_inset Formula $(1-u-v,u,v)$
+\begin_inset Formula $(u,v,1-u-v)$
 \end_inset
 
 .
+\end_layout
+
+\begin_layout Standard
+The Bézier simplex 
+\begin_inset Formula $W_{4}^{-1}$
+\end_inset
+
+ defines the vertices of the four-sided domain in the plane.
  Since the tensor product patch will be defined on 
 \begin_inset Formula $[0,1]\times[0,1]$
 \end_inset
@@ -798,8 +831,8 @@ For the 2D simplex, we can use the triangle
  are:
 \begin_inset Formula 
 \begin{align}
-P_{1000} & =(0,0,1), & P_{0100} & =(-1,1,1),\nonumber \\
-P_{0010} & =(0,1,0), & P_{0001} & =(1,0,0).
+P_{1000} & =(0,1,0), & P_{0100} & =(1,1,-1),\nonumber \\
+P_{0010} & =(1,0,0), & P_{0001} & =(0,0,1).
 \end{align}
 
 \end_inset
@@ -860,14 +893,22 @@ Homogenous coordinates are normally represented by adding an extra ``weight''
 , and projection works by dividing with the weight.
  With Bézier simplexes, we use another type of homogenization, that allows
  us to use the simplex composition algorithm as it is, even for the rational
- case.
- Here 
-\begin_inset Formula $(x,y,z)\equiv(x,y,z,1-x-y-z)$
+ case: we take the barycentric coordinates (relative to some simplex) and
+ use them as ``normal'' coordinates.
+ If we use the canonical simplex, an 
+\begin_inset Formula $(x,y,z)$
 \end_inset
 
-, and projection is done by dividing with the sum of all coordinates.
- Since barycentric coordinates sum to one, there is no need for an extra
- weight coordinate.
+ point has the barycentric coordinates 
+\begin_inset Formula $(x,y,z,1-x-y-z)$
+\end_inset
+
+, so in general the homogenzied form will be 
+\begin_inset Formula $(x,y,z)\equiv(wx,wy,wz,w(1-x-y-z))$
+\end_inset
+
+.
+ Projection is done by dividing with the sum of all coordinates.
 \end_layout
 
 \begin_layout Standard
@@ -880,7 +921,11 @@ The homogenized form of the Wachspress coordinates is thus
 \emph on
 blossom
 \emph default
- or polarization.
+ or 
+\emph on
+polarization
+\emph default
+.
  For any homogeneous polynomial 
 \begin_inset Formula $Q(u)$
 \end_inset
@@ -1083,11 +1128,15 @@ Now that all three of the Bézier simplexes are well-defined, we can turn
 \begin_inset Formula $G$
 \end_inset
 
- denote Bézier simplexes.
+ denote Bézier simplexes, and 
+\begin_inset Formula $H=F\circ G$
+\end_inset
+
+.
  Then
 \begin_inset Formula 
 \begin{equation}
-\phi(F\circ G)=\left(n_{G},d_{F}\cdot d_{G},\delta_{F}\right),
+\phi(H)=\left(n_{G},d_{F}\cdot d_{G},\delta_{F}\right),
 \end{equation}
 
 \end_inset
@@ -1095,7 +1144,7 @@ Now that all three of the Bézier simplexes are well-defined, we can turn
 and the control points are given by
 \begin_inset Formula 
 \begin{equation}
-P_{\mathbf{s}}=\sum_{\substack{|\mathbf{s}_{1}|+|\mathbf{s}_{2}|+\dots+|\mathbf{s}_{d_{F}}|=d_{G}\\
+P_{\mathbf{s}}^{H}=\sum_{\substack{|\mathbf{s}_{1}|+|\mathbf{s}_{2}|+\dots+|\mathbf{s}_{d_{F}}|=d_{G}\\
 \mathbf{s}_{1}+\mathbf{s}_{2}+\dots+\mathbf{s}_{d_{F}}=\mathbf{s}
 }
 }\frac{\binom{k}{\mathbf{s}_{1}}\cdots\binom{k}{\mathbf{s}_{d_{F}}}}{\binom{kd_{F}}{\mathbf{s}}}\Delta_{\mathbf{0}_{n_{F}}}(P_{\mathbf{s}_{1}}^{G},\dots,P_{\mathbf{s}_{d_{F}}}^{G}),\label{eq:comp-cp}
@@ -1114,16 +1163,16 @@ where
  consisting entirely of zeros, and
 \begin_inset Formula 
 \begin{equation}
-\Delta_{\mathbf{s}}(p_{1},\dots,p_{l})=\begin{cases}
-\sum_{\alpha=1}^{n_{F}}p_{1}^{\alpha}P_{\mathbf{s}+\mathbf{e}_{\alpha}}^{F} & \text{if }l=1,\\
-\sum_{\alpha=1}^{n_{F}}p_{l}^{\alpha}\Delta_{\mathbf{s}+\mathbf{e}_{\alpha}}(p_{1},\dots,p_{l-1}). & \text{otherwise.}
+\Delta_{\mathbf{s}}(p_{1},\dots,p_{k})=\begin{cases}
+\sum_{i=1}^{n_{F}}p_{1}^{i}P_{\mathbf{s}+\mathbf{e}_{i}}^{F} & \text{if }k=1,\\
+\sum_{i=1}^{n_{F}}p_{k}^{i}\Delta_{\mathbf{s}+\mathbf{e}_{i}}(p_{1},\dots,p_{k-1}). & \text{otherwise.}
 \end{cases}
 \end{equation}
 
 \end_inset
 
 Here 
-\begin_inset Formula $p_{i}^{\alpha}$
+\begin_inset Formula $p_{k}^{i}$
 \end_inset
 
  is the 
@@ -1131,11 +1180,11 @@ Here
 \end_inset
 
 -th coordinate of 
-\begin_inset Formula $p_{i}$
+\begin_inset Formula $p_{k}$
 \end_inset
 
 , and 
-\begin_inset Formula $\mathbf{s}+\mathbf{e}_{\alpha}$
+\begin_inset Formula $\mathbf{s}+\mathbf{e}_{i}$
 \end_inset
 
  is the multi-index 
@@ -1143,13 +1192,19 @@ Here
 \end_inset
 
  with the 
-\begin_inset Formula $\alpha$
+\begin_inset Formula $i$
 \end_inset
 
 -th position increased by one.
 \end_layout
 
 \begin_layout Subsubsection
+\begin_inset CommandInset label
+LatexCommand label
+name "subsec:Efficient-composition-algorithm"
+
+\end_inset
+
 Efficient composition algorithm
 \end_layout
 
@@ -1190,6 +1245,736 @@ noprefix "false"
 ) in the process.
 \end_layout
 
+\begin_layout Standard
+\begin_inset Float algorithm
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+compose(
+\begin_inset Formula $F$
+\end_inset
+
+, 
+\begin_inset Formula $G$
+\end_inset
+
+):
+\begin_inset Newline newline
+\end_inset
+
+
+\begin_inset Phantom Phantom
+status open
+
+\begin_layout Plain Layout
+xx
+\end_layout
+
+\end_inset
+
+
+\begin_inset Formula $P_{\mathbf{s}}^{\hat{F},1}\leftarrow P_{\mathbf{s}}^{F}$
+\end_inset
+
+ for all 
+\begin_inset Formula $s\in L_{n_{F},d_{F}}$
+\end_inset
+
+
+\begin_inset Newline newline
+\end_inset
+
+
+\begin_inset Phantom Phantom
+status open
+
+\begin_layout Plain Layout
+xx
+\end_layout
+
+\end_inset
+
+
+\series bold
+fn
+\series default
+ blossom(
+\begin_inset Formula $k$
+\end_inset
+
+, 
+\begin_inset Formula $p$
+\end_inset
+
+):
+\begin_inset Newline newline
+\end_inset
+
+
+\begin_inset Phantom Phantom
+status open
+
+\begin_layout Plain Layout
+xx
+\end_layout
+
+\end_inset
+
+
+\begin_inset Phantom Phantom
+status open
+
+\begin_layout Plain Layout
+xx
+\end_layout
+
+\end_inset
+
+
+\series bold
+for
+\series default
+ 
+\begin_inset Formula $\mathbf{s}$
+\end_inset
+
+ in 
+\begin_inset Formula $L_{n_{F},d_{F}-k}$
+\end_inset
+
+:
+\begin_inset Newline newline
+\end_inset
+
+
+\begin_inset Phantom Phantom
+status open
+
+\begin_layout Plain Layout
+xx
+\end_layout
+
+\end_inset
+
+
+\begin_inset Phantom Phantom
+status open
+
+\begin_layout Plain Layout
+xx
+\end_layout
+
+\end_inset
+
+
+\begin_inset Phantom Phantom
+status open
+
+\begin_layout Plain Layout
+xx
+\end_layout
+
+\end_inset
+
+
+\begin_inset Formula $P_{\mathbf{s}}^{\hat{F},k+1}\leftarrow\sum_{i=1}^{n_{F}}p^{i}P_{\mathbf{s}+\mathbf{e}_{i}}^{\hat{F},k}$
+\end_inset
+
+
+\begin_inset Newline newline
+\end_inset
+
+
+\begin_inset Phantom Phantom
+status open
+
+\begin_layout Plain Layout
+xx
+\end_layout
+
+\end_inset
+
+
+\series bold
+fn
+\series default
+ rec(
+\begin_inset Formula $k$
+\end_inset
+
+, 
+\begin_inset Formula $\mathbf{s}_{\min}$
+\end_inset
+
+, 
+\begin_inset Formula $\mathbf{s}_{\Sigma}$
+\end_inset
+
+, 
+\begin_inset Formula $c$
+\end_inset
+
+, 
+\begin_inset Formula $\mu$
+\end_inset
+
+):
+\begin_inset Newline newline
+\end_inset
+
+
+\begin_inset Phantom Phantom
+status open
+
+\begin_layout Plain Layout
+xx
+\end_layout
+
+\end_inset
+
+
+\begin_inset Phantom Phantom
+status open
+
+\begin_layout Plain Layout
+xx
+\end_layout
+
+\end_inset
+
+
+\series bold
+if
+\series default
+ 
+\begin_inset Formula $k=d_{F}$
+\end_inset
+
+:
+\begin_inset Newline newline
+\end_inset
+
+
+\begin_inset Phantom Phantom
+status open
+
+\begin_layout Plain Layout
+xx
+\end_layout
+
+\end_inset
+
+
+\begin_inset Phantom Phantom
+status open
+
+\begin_layout Plain Layout
+xx
+\end_layout
+
+\end_inset
+
+
+\begin_inset Phantom Phantom
+status open
+
+\begin_layout Plain Layout
+xx
+\end_layout
+
+\end_inset
+
+
+\begin_inset Formula $P_{\mathbf{s}_{\Sigma}}^{H}\leftarrow P_{\mathbf{s}_{\Sigma}}^{H}+c\cdot P_{\mathbf{0}_{n_{F}}}^{\hat{F},d_{F}+1}$
+\end_inset
+
+
+\begin_inset Newline newline
+\end_inset
+
+
+\begin_inset Phantom Phantom
+status open
+
+\begin_layout Plain Layout
+xx
+\end_layout
+
+\end_inset
+
+
+\begin_inset Phantom Phantom
+status open
+
+\begin_layout Plain Layout
+xx
+\end_layout
+
+\end_inset
+
+
+\series bold
+else
+\series default
+:
+\begin_inset Newline newline
+\end_inset
+
+
+\begin_inset Phantom Phantom
+status open
+
+\begin_layout Plain Layout
+xx
+\end_layout
+
+\end_inset
+
+
+\begin_inset Phantom Phantom
+status open
+
+\begin_layout Plain Layout
+xx
+\end_layout
+
+\end_inset
+
+
+\begin_inset Phantom Phantom
+status open
+
+\begin_layout Plain Layout
+xx
+\end_layout
+
+\end_inset
+
+
+\begin_inset Formula $\mathbf{s}\leftarrow\mathbf{s}_{\min}$
+\end_inset
+
+
+\begin_inset Newline newline
+\end_inset
+
+
+\begin_inset Phantom Phantom
+status open
+
+\begin_layout Plain Layout
+xx
+\end_layout
+
+\end_inset
+
+
+\begin_inset Phantom Phantom
+status open
+
+\begin_layout Plain Layout
+xx
+\end_layout
+
+\end_inset
+
+
+\begin_inset Phantom Phantom
+status open
+
+\begin_layout Plain Layout
+xx
+\end_layout
+
+\end_inset
+
+
+\series bold
+while
+\series default
+ 
+\begin_inset Formula $\mathbf{s}\neq\emptyset$
+\end_inset
+
+:
+\begin_inset Newline newline
+\end_inset
+
+
+\begin_inset Phantom Phantom
+status open
+
+\begin_layout Plain Layout
+xx
+\end_layout
+
+\end_inset
+
+
+\begin_inset Phantom Phantom
+status open
+
+\begin_layout Plain Layout
+xx
+\end_layout
+
+\end_inset
+
+
+\begin_inset Phantom Phantom
+status open
+
+\begin_layout Plain Layout
+xx
+\end_layout
+
+\end_inset
+
+
+\begin_inset Phantom Phantom
+status open
+
+\begin_layout Plain Layout
+xx
+\end_layout
+
+\end_inset
+
+blossom(
+\begin_inset Formula $k+1$
+\end_inset
+
+, 
+\begin_inset Formula $P_{\mathbf{s}}^{G}$
+\end_inset
+
+)
+\begin_inset Newline newline
+\end_inset
+
+
+\begin_inset Phantom Phantom
+status open
+
+\begin_layout Plain Layout
+xx
+\end_layout
+
+\end_inset
+
+
+\begin_inset Phantom Phantom
+status open
+
+\begin_layout Plain Layout
+xx
+\end_layout
+
+\end_inset
+
+
+\begin_inset Phantom Phantom
+status open
+
+\begin_layout Plain Layout
+xx
+\end_layout
+
+\end_inset
+
+
+\begin_inset Phantom Phantom
+status open
+
+\begin_layout Plain Layout
+xx
+\end_layout
+
+\end_inset
+
+rec(
+\begin_inset Formula $k+1$
+\end_inset
+
+, 
+\begin_inset Formula $\mathbf{s}$
+\end_inset
+
+, 
+\begin_inset Formula $\mathbf{s}_{\Sigma}+\mathbf{s}$
+\end_inset
+
+, 
+\begin_inset Formula $c\cdot\binom{|\mathbf{s}|}{\mathbf{s}}/\mu$
+\end_inset
+
+, 
+\begin_inset Formula $\mu+1$
+\end_inset
+
+)
+\begin_inset Newline newline
+\end_inset
+
+
+\begin_inset Phantom Phantom
+status open
+
+\begin_layout Plain Layout
+xx
+\end_layout
+
+\end_inset
+
+
+\begin_inset Phantom Phantom
+status open
+
+\begin_layout Plain Layout
+xx
+\end_layout
+
+\end_inset
+
+
+\begin_inset Phantom Phantom
+status open
+
+\begin_layout Plain Layout
+xx
+\end_layout
+
+\end_inset
+
+
+\begin_inset Phantom Phantom
+status open
+
+\begin_layout Plain Layout
+xx
+\end_layout
+
+\end_inset
+
+
+\begin_inset Formula $\mu\leftarrow1$
+\end_inset
+
+
+\begin_inset Newline newline
+\end_inset
+
+
+\begin_inset Phantom Phantom
+status open
+
+\begin_layout Plain Layout
+xx
+\end_layout
+
+\end_inset
+
+
+\begin_inset Phantom Phantom
+status open
+
+\begin_layout Plain Layout
+xx
+\end_layout
+
+\end_inset
+
+
+\begin_inset Phantom Phantom
+status open
+
+\begin_layout Plain Layout
+xx
+\end_layout
+
+\end_inset
+
+
+\begin_inset Phantom Phantom
+status open
+
+\begin_layout Plain Layout
+xx
+\end_layout
+
+\end_inset
+
+
+\begin_inset Formula $\mathbf{s}\leftarrow$
+\end_inset
+
+next(
+\begin_inset Formula $\mathbf{s}$
+\end_inset
+
+)
+\begin_inset Newline newline
+\end_inset
+
+
+\begin_inset Phantom Phantom
+status open
+
+\begin_layout Plain Layout
+xx
+\end_layout
+
+\end_inset
+
+rec(
+\begin_inset Formula $0$
+\end_inset
+
+, 
+\begin_inset Formula $\mathbf{0}_{n_{G}}+\mathbf{e}_{n_{G}}\cdot d_{G}$
+\end_inset
+
+, 
+\begin_inset Formula $\mathbf{0}_{n_{G}}$
+\end_inset
+
+, 
+\begin_inset Formula $d_{F}!$
+\end_inset
+
+, 
+\begin_inset Formula $1$
+\end_inset
+
+)
+\begin_inset Newline newline
+\end_inset
+
+
+\begin_inset Phantom Phantom
+status open
+
+\begin_layout Plain Layout
+xx
+\end_layout
+
+\end_inset
+
+
+\begin_inset Formula $P_{\mathbf{s}}^{H}\leftarrow P_{\mathbf{s}}^{H}/\binom{d_{H}}{\mathbf{s}}$
+\end_inset
+
+ for all 
+\begin_inset Formula $s\in L_{n_{H},d_{H}}$
+\end_inset
+
+
+\begin_inset Newline newline
+\end_inset
+
+
+\begin_inset Phantom Phantom
+status open
+
+\begin_layout Plain Layout
+xx
+\end_layout
+
+\end_inset
+
+
+\series bold
+return
+\series default
+ 
+\begin_inset Formula $P^{H}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+\begin_inset CommandInset label
+LatexCommand label
+name "alg:Efficient-composition"
+
+\end_inset
+
+Efficient composition of two Bézier simplexes.
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+
+Algorithm
+\begin_inset space ~
+\end_inset
+
+
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "alg:Efficient-composition"
+plural "false"
+caps "false"
+noprefix "false"
+
+\end_inset
+
+ shows the pseudocode.
+ Here next(
+\begin_inset Formula $\mathbf{s}$
+\end_inset
+
+) is the next multi-index in a lexical ordering, e.g.
+ 
+\begin_inset Formula $0021\rightarrow0030\rightarrow0102\rightarrow0111\rightarrow\dots$
+\end_inset
+
+, returning
+\emph on
+ 
+\begin_inset Formula $\emptyset$
+\end_inset
+
+
+\emph default
+ after the last element (
+\begin_inset Formula $3000$
+\end_inset
+
+ in the example).
+\end_layout
+
+\begin_layout Subsubsection
+Change of coordinates
+\end_layout
+
+\begin_layout Standard
+The homogenized control points computed above have the form 
+\begin_inset Formula $(wx,wy,wz,w(1-x-y-z))$
+\end_inset
+
+.
+ To convert these to the usual homogeneous coordinates 
+\begin_inset Formula $(wx,wy,wz,w)$
+\end_inset
+
+, we just need to replace the last coordinate by the sum of all coordinates.
+\end_layout
+
 \begin_layout Subsection
 \begin_inset CommandInset label
 LatexCommand label
@@ -1201,15 +1986,31 @@ Conversion to tensor product form
 \end_layout
 
 \begin_layout Standard
-conversion to 
-\begin_inset Quotes eld
+A (rational or non-rational) S-patch of depth 
+\begin_inset Formula $d$
 \end_inset
 
-standard
-\begin_inset Quotes erd
+ has the tensor product Bézier patch form
+\begin_inset Formula 
+\begin{equation}
+\hat{S}(u,v)=\sum_{i=0}^{d}\sum_{j=0}^{d}C_{ij}B_{i}^{d}(u)B_{j}^{d}(v)
+\end{equation}
+
 \end_inset
 
- homogeneous coordinates; Blabla
+with the control points
+\begin_inset Formula 
+\begin{equation}
+C_{ij}=\sum_{\substack{\mathbf{s}\\
+s_{2}+s_{3}=i\\
+s_{3}+s_{4}=j
+}
+}\frac{\binom{d}{\mathbf{s}}}{\binom{d}{i}\binom{d}{j}}P_{\mathbf{s}}.
+\end{equation}
+
+\end_inset
+
+
 \end_layout
 
 \begin_layout Section
@@ -1257,17 +2058,18 @@ sideways false
 status collapsed
 
 \begin_layout Plain Layout
+\align center
 \begin_inset Float figure
 wide false
 sideways false
-status open
+status collapsed
 
 \begin_layout Plain Layout
 \align center
 \begin_inset Graphics
 	filename images/5sided-controlnet.png
 	display false
-	width 100col%
+	width 85col%
 
 \end_inset
 
@@ -1296,17 +2098,18 @@ S-patch control network
 \end_layout
 
 \begin_layout Plain Layout
+\align center
 \begin_inset Float figure
 wide false
 sideways false
-status open
+status collapsed
 
 \begin_layout Plain Layout
 \align center
 \begin_inset Graphics
 	filename images/5sided-contours.png
 	display false
-	width 100col%
+	width 85col%
 
 \end_inset
 
@@ -1331,17 +2134,18 @@ Contouring
 \end_layout
 
 \begin_layout Plain Layout
+\align center
 \begin_inset Float figure
 wide false
 sideways false
-status open
+status collapsed
 
 \begin_layout Plain Layout
 \align center
 \begin_inset Graphics
 	filename images/5sided-tensor.png
 	display false
-	width 100col%
+	width 85col%
 
 \end_inset
 
@@ -1366,17 +2170,18 @@ Trimmed patch with control net
 \end_layout
 
 \begin_layout Plain Layout
+\align center
 \begin_inset Float figure
 wide false
 sideways false
-status open
+status collapsed
 
 \begin_layout Plain Layout
 \align center
 \begin_inset Graphics
 	filename images/5sided-tensor-full.png
 	display false
-	width 100col%
+	width 85col%
 
 \end_inset
 
@@ -1423,20 +2228,96 @@ A 5-sided S-patch of depth 5.
 
 \end_layout
 
-\begin_layout Section*
+\begin_layout Section
 Discussion
 \end_layout
 
 \begin_layout Standard
-Bla
+Now that we have seen how S-patches are transformed into trimmed Bézier
+ patches, let us look at some practical issues.
+\end_layout
+
+\begin_layout Subsection
+Efficiency
 \end_layout
 
 \begin_layout Standard
-Bezier haromszog nem racionalis
+The algorithm in Section
+\begin_inset space ~
+\end_inset
+
+
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "subsec:Efficient-composition-algorithm"
+plural "false"
+caps "false"
+noprefix "false"
+
+\end_inset
+
+ is still computationally demanding.
+ Converting an 5-sided S-patch of depth 8 took more than 5 minutes on a
+ 2.8GHz processor.
+ There is a much faster approach – see the upcoming paper of the author.
+\begin_inset CommandInset citation
+LatexCommand cite
+key "Salvi:2019"
+literal "false"
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsection
+Triangles
 \end_layout
 
 \begin_layout Standard
-Sarkokban eltuno nevezo
+Three-sided S-patches, i.e., Bézier triangles, are converted into simple polynomia
+l patches, since computing the barycentric coordinates do not involve rational
+ polynomials.
+ Note however, that there are alternative methods for the quadrilateral
+ transformation of a triangular patch, see e.g.
+\begin_inset space ~
+\end_inset
+
+Warren's domain deformation method.
+\begin_inset CommandInset citation
+LatexCommand cite
+key "Warren:1992"
+literal "false"
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsection
+Control net quality
+\end_layout
+
+\begin_layout Standard
+One issue with the conversion is that the quadrilateral control grid may
+ have outlier control points or spikes near the corners.
+ This is because the denominator of Wachspress coordinates vanish on a circle
+ around the domain, and these singularities undermine the stability of these
+ areas.
+\end_layout
+
+\begin_layout Section*
+Conclusion
+\end_layout
+
+\begin_layout Standard
+The S-patch representation of multi-sided surfaces can be an important asset
+ in the designer's toolbox.
+ It can be used to fill holes or create smooth vertex blends, and then it
+ can be exported to CAD/CAM systems as a trimmed Bézier patch, without losing
+ precision, thus making it possible to create perfectly watertight models.
+ In this paper we have reviewed the steps required for the quadrilateral
+ conversion, and discussed some related questions.
 \end_layout
 
 \begin_layout Section*
