@@ -516,7 +516,7 @@ Let us introduce the following notations for a Bézier simplex
 \begin_inset Formula $n_{S}$
 \end_inset
 
- : number of arguments (i.e., the dimension of the domain simplex + 1)
+ : # of arguments (i.e., domain simplex dimension + 1)
 \end_layout
 
 \begin_layout Itemize
@@ -1073,7 +1073,7 @@ Simplex composition
 \end_layout
 
 \begin_layout Standard
-Now that all three of theBézier simplexes are well-defined, we can turn
+Now that all three of the Bézier simplexes are well-defined, we can turn
  our attention to their composition.
  Let 
 \begin_inset Formula $F$
@@ -1098,7 +1098,7 @@ and the control points are given by
 P_{\mathbf{s}}=\sum_{\substack{|\mathbf{s}_{1}|+|\mathbf{s}_{2}|+\dots+|\mathbf{s}_{d_{F}}|=d_{G}\\
 \mathbf{s}_{1}+\mathbf{s}_{2}+\dots+\mathbf{s}_{d_{F}}=\mathbf{s}
 }
-}\frac{\binom{k}{\mathbf{s}_{1}}\cdots\binom{k}{\mathbf{s}_{d_{F}}}}{\binom{kd_{F}}{\mathbf{s}}}\Delta_{\mathbf{0}_{n_{F}}}(P_{\mathbf{s}_{1}}^{G},\dots,P_{\mathbf{s}_{d_{F}}}^{G}),
+}\frac{\binom{k}{\mathbf{s}_{1}}\cdots\binom{k}{\mathbf{s}_{d_{F}}}}{\binom{kd_{F}}{\mathbf{s}}}\Delta_{\mathbf{0}_{n_{F}}}(P_{\mathbf{s}_{1}}^{G},\dots,P_{\mathbf{s}_{d_{F}}}^{G}),\label{eq:comp-cp}
 \end{equation}
 
 \end_inset
@@ -1115,8 +1115,8 @@ where
 \begin_inset Formula 
 \begin{equation}
 \Delta_{\mathbf{s}}(p_{1},\dots,p_{l})=\begin{cases}
-\sum_{\alpha=0}^{n_{F}}p_{1}^{\alpha}P_{\mathbf{s}+\mathbf{e}_{\alpha}}^{F} & \text{if }l=1,\\
-\sum_{\alpha=0}^{n_{F}}p_{l}^{\alpha}\Delta_{\mathbf{s}+\mathbf{e}_{\alpha}}(p_{1},\dots,p_{l-1}). & \text{otherwise.}
+\sum_{\alpha=1}^{n_{F}}p_{1}^{\alpha}P_{\mathbf{s}+\mathbf{e}_{\alpha}}^{F} & \text{if }l=1,\\
+\sum_{\alpha=1}^{n_{F}}p_{l}^{\alpha}\Delta_{\mathbf{s}+\mathbf{e}_{\alpha}}(p_{1},\dots,p_{l-1}). & \text{otherwise.}
 \end{cases}
 \end{equation}
 
@@ -1150,11 +1150,44 @@ Here
 \end_layout
 
 \begin_layout Subsubsection
-Efficient algorithm
+Efficient composition algorithm
 \end_layout
 
 \begin_layout Standard
-blabla
+The equations shown in the previous section, when implemented naïvely, are
+ highly inefficient.
+ DeRose et al.
+\begin_inset CommandInset citation
+LatexCommand cite
+key "DeRose:1993"
+literal "false"
+
+\end_inset
+
+
+\begin_inset space ~
+\end_inset
+
+show an algorithm for computing it in a less computationally intensive manner.
+ It is based on caching the results of the recursive calls to 
+\begin_inset Formula $\Delta$
+\end_inset
+
+, as well as computing the multiplier in Eq.
+\begin_inset space ~
+\end_inset
+
+(
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "eq:comp-cp"
+plural "false"
+caps "false"
+noprefix "false"
+
+\end_inset
+
+) in the process.
 \end_layout
 
 \begin_layout Subsection
@@ -1168,7 +1201,15 @@ Conversion to tensor product form
 \end_layout
 
 \begin_layout Standard
-Blabla
+conversion to 
+\begin_inset Quotes eld
+\end_inset
+
+standard
+\begin_inset Quotes erd
+\end_inset
+
+ homogeneous coordinates; Blabla
 \end_layout
 
 \begin_layout Section
@@ -1178,12 +1219,25 @@ name "sec:Case-Studies"
 
 \end_inset
 
-Examples
+Example
 \end_layout
 
 \begin_layout Standard
-...
- converted into a 
+Figure
+\begin_inset space ~
+\end_inset
+
+
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:A-5-sided-S-patch"
+plural "false"
+caps "false"
+noprefix "false"
+
+\end_inset
+
+ shows a 5-sided S-patch of depth 5, converted into a 
 \begin_inset Formula $15\times15$
 \end_inset
 
@@ -1379,6 +1433,10 @@ Bla
 
 \begin_layout Standard
 Bezier haromszog nem racionalis
+\end_layout
+
+\begin_layout Standard
+Sarkokban eltuno nevezo
 \end_layout
 
 \begin_layout Section*
