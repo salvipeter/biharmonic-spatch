@@ -683,7 +683,7 @@ where
 \begin_inset Formula $D_{j}(p)$
 \end_inset
 
- is the distance of 
+ is the signed distance of 
 \begin_inset Formula $p$
 \end_inset
 
@@ -899,7 +899,7 @@ Polarization of the Wachspress coordinates
 \end_layout
 
 \begin_layout Standard
-Homogenous coordinates are normally represented by adding an extra ``weight''
+Homogeneous coordinates are normally represented by adding an extra ``weight''
  coordinate, so 
 \begin_inset Formula $(x,y,z)\equiv(wx,wy,wz,w)$
 \end_inset
@@ -1243,28 +1243,18 @@ show an algorithm for computing it in a less computationally intensive manner.
 \begin_inset Formula $\Delta$
 \end_inset
 
-, while computing the multiplier in Eq.
-\begin_inset space ~
+, and using the fact that 
+\begin_inset Formula $\Delta$
 \end_inset
 
-(
-\begin_inset CommandInset ref
-LatexCommand ref
-reference "eq:comp-cp"
-plural "false"
-caps "false"
-noprefix "false"
-
-\end_inset
-
-) in the process.
+ is symmetric in its arguments.
 \end_layout
 
 \begin_layout Standard
 \begin_inset Float algorithm
 wide false
 sideways false
-status open
+status collapsed
 
 \begin_layout Plain Layout
 
@@ -2025,11 +2015,26 @@ next
 \end_inset
 
  in the example).
+ Since 
+\begin_inset Formula $\Delta$
+\end_inset
+
+ is now computed only for this lexicographical permutation of its arguments,
+ its result is multiplied by 
+\begin_inset Formula $d_{F}!$
+\end_inset
+
+ divided by the factorials of the argument multiplicities (built up by the
+ variable 
+\begin_inset Formula $\mu$
+\end_inset
+
+).
 \end_layout
 
 \begin_layout Standard
 The paper suggests the use of arrays for the control points, indexed by
- the lexical order of the multi-index labels.
+ the lexicographical order of the multi-index labels.
  A conceptually simpler alternative is the use of a dictionary data structure
  (a hash table) that maps control point positions to their labels.
  Our experiments show that this is actually even faster, as the hash function

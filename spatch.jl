@@ -1213,4 +1213,30 @@ function write_surface_rat(surf, filename, resolution)
     writeOBJ(vs, ts, filename)
 end
 
+
+"""
+    write_denominator(n, filename, resolution; pmin=-1, pmax=2)
+
+Evaluates the denominator of an `n`-sided S-patch on the square
+[pmin,pmin]x[pmax,pmax], and writes the results in a file as
+gridded data ready for visualization with GNUPlot.
+"""
+function write_denominator(n, filename, resolution; pmin = -1, pmax = 2)
+    poly = regularpoly(n)
+    dist(i, q) = line_point_distance(poly[i], poly[mod1(i+1,n)], q)
+    blend(i, p) = prod(j -> dist(j, p), setdiff(1:n, [mod1(i-1,n), i]))
+    den(p) = sum(i -> blend(i, p), 1:n)
+    open(filename, "w") do f
+        for i in 0:resolution
+            u = pmin + i * (pmax - pmin) / resolution
+            for j in 0:resolution
+                v = pmin + j * (pmax - pmin) / resolution
+                d = den([u,v])
+                println(f, "$u $v $d")
+            end
+            println(f, "")
+        end
+    end
+end
+
 end # module
