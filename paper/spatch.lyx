@@ -151,6 +151,9 @@ noprefix "false"
 \end_inset
 
 ), while a tensor product quintic surface has only 36.
+\end_layout
+
+\begin_layout Standard
 \begin_inset Float figure
 wide false
 sideways false
@@ -186,16 +189,8 @@ The control net of a 6-sided quintic S-patch.
 
 \end_layout
 
-\begin_layout Plain Layout
-
-\end_layout
-
 \end_inset
 
-
-\end_layout
-
-\begin_layout Standard
 Interactive placement of such a large number of points is hardly possible,
  but this does not mean that the whole representation should be discarded
  as impractical.
@@ -307,11 +302,14 @@ An
 \begin_inset Formula $n$
 \end_inset
 
--sided S-patch is defined over a regular 
+-sided S-patch is defined over an 
 \begin_inset Formula $n$
 \end_inset
 
--gon, parameterized by barycentric coordinates 
+-gon, parameterized by generalized ba\SpecialChar softhyphen
+ry\SpecialChar softhyphen
+cen\SpecialChar softhyphen
+tric coordinates 
 \begin_inset Formula $\boldsymbol{\lambda}=(\lambda_{1},\dots,\lambda_{n})$
 \end_inset
 
@@ -319,28 +317,33 @@ An
 \begin_inset space ~
 \end_inset
 
-Wachspress or mean value coordinates
-\begin_inset space ~
-\end_inset
-
-
-\begin_inset CommandInset citation
-LatexCommand cite
-key "Hormann:2006"
-literal "false"
-
-\end_inset
-
-.
+Wachspress or mean value coordinates.
+ (In the current paper, we will always use a regular polygon as the domain.)
  Its control points 
-\begin_inset Formula $\{P\}$
+\begin_inset Formula $\{P_{\mathbf{s}}\}$
 \end_inset
 
  are labeled by 
 \begin_inset Formula $n$
 \end_inset
 
- non-negative integers whose sum is the degree of the surface (
+ non-negative integers whose sum is the degree
+\begin_inset Foot
+status open
+
+\begin_layout Plain Layout
+Also called the 
+\emph on
+depth
+\emph default
+ of the S-patch, to differentiate it from the (rational) polynomial degree
+ of the surface.
+ We will not make this distinction here.
+\end_layout
+
+\end_inset
+
+ of the surface (
 \begin_inset Formula $d$
 \end_inset
 
@@ -498,6 +501,9 @@ noprefix "false"
 \end_inset
 
 .
+\end_layout
+
+\begin_layout Standard
 \begin_inset Float figure
 wide false
 sideways false
@@ -508,7 +514,7 @@ status collapsed
 \begin_inset Graphics
 	filename images/5-3-cnet.pdf
 	display false
-	width 70text%
+	width 80text%
 
 \end_inset
 
@@ -536,10 +542,6 @@ The control net of a 5-sided cubic S-patch with labels.
 
 \end_inset
 
-
-\end_layout
-
-\begin_layout Standard
 Differentiation of Eq.
 \begin_inset space ~
 \end_inset
@@ -959,39 +961,6 @@ noprefix "false"
 \end_layout
 
 \begin_layout Subsection
-\begin_inset Formula $C^{0}$
-\end_inset
-
- boundaries
-\end_layout
-
-\begin_layout Standard
-Before diving into the intricacies of tangential continuity, it is important
- to note that the boundaries of an S-patch are Bézier curves with 
-\begin_inset Formula $P_{j,1}^{i}$
-\end_inset
-
- (
-\begin_inset Formula $0\leq j\leq d$
-\end_inset
-
-) as the control polygons, so if positional interpolation is enough, it
- can be done by setting 
-\begin_inset Formula $P_{j,1}^{i}=C_{j,0}^{i}$
-\end_inset
-
- for every 
-\begin_inset Formula $i$
-\end_inset
-
- and 
-\begin_inset Formula $j$
-\end_inset
-
-.
-\end_layout
-
-\begin_layout Subsection
 \begin_inset Formula $G^{1}$
 \end_inset
 
@@ -1030,6 +999,35 @@ literal "false"
 \end_layout
 
 \begin_layout Standard
+Before diving into the intricacies of tangential continuity, it is important
+ to note that the boundaries of an S-patch are Bézier curves with 
+\begin_inset Formula $P_{j,1}^{i}$
+\end_inset
+
+ (
+\begin_inset Formula $0\leq j\leq d$
+\end_inset
+
+) as the control polygons, so if positional (
+\begin_inset Formula $C^{0}$
+\end_inset
+
+) interpolation is enough, it can be done by setting 
+\begin_inset Formula $P_{j,1}^{i}=C_{j,0}^{i}$
+\end_inset
+
+ for every 
+\begin_inset Formula $i$
+\end_inset
+
+ and 
+\begin_inset Formula $j$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
 The conditions of tangential continuity with a Bézier triangle (or another
  S-patch) of the same degree are simple: (i) each boundary panel should
  be the affine image of the domain polygon, and (ii) opposite boundary panels
@@ -1059,14 +1057,21 @@ From (i) it follows that it suffices to set 3 points of each panel, 2 of
 .
  Eventually we arrive at the equation
 \begin_inset Formula 
-\begin{align}
+\begin{align*}
 P_{j,n}^{i} & =P_{j,1}^{i}+\frac{d}{(d+3)}\left[\delta_{1}^{d}(j)\left(C_{j,0}^{i}-C_{j-1,0}^{i}\right)\cdot2c\binom{d-1}{j-1}+\right.\\
- & \qquad\qquad\qquad\qquad\delta_{2}^{d+1}(j)\left(C_{j-1,0}^{i}-C_{j-2,0}^{i}\right)\cdot4c\binom{d-1}{j-2}+\nonumber \\
- & \qquad\qquad\qquad\qquad\delta_{3}^{d+2}(j)\left(C_{j-2,0}^{i}-C_{j-3,0}^{i}\right)\cdot2c\binom{d-1}{j-3}+\nonumber \\
- & \qquad\qquad\qquad\qquad\delta_{0}^{d}(j)\left(C_{j,1}^{i}-C_{j,0}^{i}\right)\cdot\binom{d}{j}+\nonumber \\
- & \qquad\qquad\qquad\qquad\delta_{1}^{d+1}(j)\left(C_{j-1,1}^{i}-C_{j-1,0}^{i}\right)\cdot(2+2c)\binom{d}{j-1}+\nonumber \\
- & \left.\qquad\qquad\qquad\qquad\delta_{2}^{d+2}(j)\left(C_{j-2,1}^{i}-C_{j-2,0}^{i}\right)\cdot\binom{d}{j-2}\right]/\binom{d+2}{j},\nonumber 
-\end{align}
+ & \qquad\qquad\qquad\qquad\delta_{2}^{d+1}(j)\left(C_{j-1,0}^{i}-C_{j-2,0}^{i}\right)\cdot4c\binom{d-1}{j-2}+\\
+ & \qquad\qquad\qquad\qquad\delta_{3}^{d+2}(j)\left(C_{j-2,0}^{i}-C_{j-3,0}^{i}\right)\cdot2c\binom{d-1}{j-3}+\\
+ & \qquad\qquad\qquad\qquad\delta_{0}^{d}(j)\left(C_{j,1}^{i}-C_{j,0}^{i}\right)\cdot\binom{d}{j}+\\
+ & \qquad\qquad\qquad\qquad\delta_{1}^{d+1}(j)\left(C_{j-1,1}^{i}-C_{j-1,0}^{i}\right)\cdot(2+2c)\binom{d}{j-1}+
+\end{align*}
+
+\end_inset
+
+
+\begin_inset Formula 
+\begin{equation}
+\left.\qquad\qquad\qquad\qquad\delta_{2}^{d+2}(j)\left(C_{j-2,1}^{i}-C_{j-2,0}^{i}\right)\cdot\binom{d}{j-2}\right]/\binom{d+2}{j},
+\end{equation}
 
 \end_inset
 
@@ -1217,6 +1222,9 @@ noprefix "false"
 .
  Note, however, that there can be different masks even within one patch,
  as the valency of control points may vary.
+\end_layout
+
+\begin_layout Standard
 \begin_inset Float table
 wide false
 sideways false
@@ -1863,10 +1871,6 @@ Masks used on tensor product Bézier control networks.
 
 \end_inset
 
-
-\end_layout
-
-\begin_layout Standard
 When the cross-derivatives are fixed at the boundary, it is natural to use
  a biharmonic mask (see Table
 \begin_inset space ~
@@ -2268,7 +2272,7 @@ status collapsed
 \begin_inset Graphics
 	filename images/5-5-patch.png
 	display false
-	width 60text%
+	width 63text%
 
 \end_inset
 
@@ -2317,19 +2321,31 @@ status collapsed
 
 \begin_layout Plain Layout
 \align center
+\begin_inset space \hfill{}
+\end_inset
+
+
 \begin_inset Graphics
 	filename images/connection-ribbons.png
 	display false
-	width 49text%
+	width 46text%
 
+\end_inset
+
+
+\begin_inset space \hfill{}
 \end_inset
 
 
 \begin_inset Graphics
 	filename images/connection-slicing.png
 	display false
-	width 51text%
+	width 47text%
 
+\end_inset
+
+
+\begin_inset space \hfill{}
 \end_inset
 
 
