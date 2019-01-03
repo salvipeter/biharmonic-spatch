@@ -111,9 +111,9 @@ S-patches have many nice mathematical properties.
  It is known since their first appearance, that any regular S-patch can
  be exactly converted into a trimmed rational Bézier surface.
  This is a big advantage compared to other multi-sided surface representations
- that have to be approximated to be exported into CAD/CAM systems.
- The conversion process, however, remained on the theoretical level, with
- bits and pieces scattered in multiple publications.
+ that have to be approximated for exporting them into CAD/CAM systems.
+ The actual conversion process, however, remained at a theoretical level,
+ with bits and pieces scattered in multiple publications.
  In this paper we review the entirety of the algorithm, and investigate
  it from a practical aspect.
 \end_layout
@@ -137,9 +137,9 @@ S-patches offer a mathematically perfect generalization of Bézier surfaces
 \end_layout
 
 \begin_layout Standard
-The lack of success for S-patches may be due to their complex control net
- structure, and the large number of control points.
- These, as it turns out, can be circumvented by the automatic generation
+The lack of success for S-patches is likely due to their complex control
+ net structure, and the large number of control points.
+ These, as it turns out, can be (partially) solved by the automatic generation
  of the control network using only boundary constraints.
 \begin_inset CommandInset citation
 LatexCommand cite
@@ -157,7 +157,7 @@ Another common issue with
 \end_inset
 
 -sided surface representations is the conversion to tensor product patches,
- which is crucial for the processing of the model in CAD/CAM systems.
+ which is crucial for processing models in CAD/CAM systems.
  Usually some fitting method is used, which either creates 
 \begin_inset Formula $n$
 \end_inset
@@ -171,7 +171,7 @@ literal "false"
 \end_inset
 
  or a larger four-sided region with approximated trimming curves.
- The former loses the 
+ The former does not ensure 
 \begin_inset Formula $C^{\infty}$
 \end_inset
 
@@ -198,8 +198,8 @@ literal "false"
 
  that any regular S-patch can be exactly converted into a trimmed rational
  Bézier surface.
- The algorithm for this was not described in detail, however, so in this
- article we will go through all the required steps.
+ The algorithm for this has not been described in detail, however, so in
+ our article we will go through all the required steps.
 \end_layout
 
 \begin_layout Standard
@@ -271,7 +271,7 @@ literal "false"
 
 \end_inset
 
- in 1989, but the techniques involved in the conversion process were developed
+ in 1989, but the techniques needed for the conversion process were developed
  earlier: see Ramshaw's wonderful book
 \begin_inset CommandInset citation
 LatexCommand cite
@@ -301,9 +301,8 @@ literal "false"
 \end_layout
 
 \begin_layout Standard
-This work offers little novelty.
- In the following sections, we will try to connect the dots, and insert
- a few missing pieces (notably the polarization of Wachspress coordinates
+In the following sections, we will try to connect the dots, and insert a
+ few missing pieces (notably the polarization of Wachspress coordinates
  in Section
 \begin_inset space ~
 \end_inset
@@ -374,7 +373,29 @@ literal "false"
 \begin_inset Formula $n$
 \end_inset
 
- non-negative integers whose sum is the depth of the surface (
+ non-negative integers whose sum is the 
+\emph on
+depth
+\emph default
+
+\begin_inset Foot
+status open
+
+\begin_layout Plain Layout
+Sometimes also referred to as the 
+\emph on
+degree
+\emph default
+, since the boundaries of an S-patch are Bézier curves of degree 
+\begin_inset Formula $d$
+\end_inset
+
+.
+\end_layout
+
+\end_inset
+
+ of the surface (
 \begin_inset Formula $d$
 \end_inset
 
@@ -816,7 +837,7 @@ In 2D, this will be the triangle
 \begin_inset Formula $(0,0)$
 \end_inset
 
-, so the barycentric coordinates for an 
+, so the barycentric coordinates for a 
 \begin_inset Formula $(u,v)$
 \end_inset
 
@@ -908,8 +929,11 @@ Homogeneous coordinates are normally represented by adding an extra ``weight''
  With Bézier simplexes, we use another type of homogenization, that allows
  us to use the simplex composition algorithm as it is, even for the rational
  case: we take the barycentric coordinates (relative to some simplex) and
- use them as ``normal'' coordinates.
- If we use the canonical simplex, an 
+ use them as ``normal'' coordinates in a higher dimension.
+\end_layout
+
+\begin_layout Standard
+If we use the canonical simplex, an 
 \begin_inset Formula $(x,y,z)$
 \end_inset
 
@@ -926,7 +950,7 @@ Homogeneous coordinates are normally represented by adding an extra ``weight''
 \end_layout
 
 \begin_layout Standard
-The homogenized form of the Wachspress coordinates is thus 
+The homogenized form of Wachspress coordinates is thus 
 \begin_inset Formula $\left\{ \prod_{j\neq i-1,i}D_{j}(p)\right\} $
 \end_inset
 
@@ -981,7 +1005,7 @@ noprefix "false"
 
 \end_inset
 
-) shows symmetry, Eq.
+) shows symmetry for permutations, Eq.
 \begin_inset space ~
 \end_inset
 
@@ -1060,7 +1084,7 @@ where
 \begin_inset Formula $k$
 \end_inset
 
- goes from 
+ runs from 
 \begin_inset Formula $1$
 \end_inset
 
@@ -1974,7 +1998,7 @@ Efficient composition of two Bézier simplexes.
 
 \end_inset
 
-Algorithm
+The pseudocode is shown in Algorithm
 \begin_inset space ~
 \end_inset
 
@@ -1988,7 +2012,7 @@ noprefix "false"
 
 \end_inset
 
- shows the pseudocode.
+.
  Here 
 \shape smallcaps
 next
@@ -2033,8 +2057,8 @@ next
 \end_layout
 
 \begin_layout Standard
-The paper suggests the use of arrays for the control points, indexed by
- the lexicographical order of the multi-index labels.
+The above paper suggests the use of arrays for the control points, indexed
+ by the lexicographical order of the multi-index labels.
  A conceptually simpler alternative is the use of a dictionary data structure
  (a hash table) that maps control point positions to their labels.
  Our experiments show that this is actually even faster, as the hash function
@@ -2069,7 +2093,7 @@ Conversion to tensor product form
 \end_layout
 
 \begin_layout Standard
-A (rational or non-rational) S-patch of depth 
+A (rational or non-rational) quadrilateral S-patch of depth 
 \begin_inset Formula $d$
 \end_inset
 
@@ -2394,8 +2418,8 @@ Conclusion
 \end_layout
 
 \begin_layout Standard
-The S-patch representation of multi-sided surfaces can be an important asset
- in the designer's toolbox.
+The S-patch representation of multi-sided surfaces could be an important
+ asset in a modeling toolbox.
  It can be used to fill holes or create smooth vertex blends, and then it
  can be exported to CAD/CAM systems as a trimmed Bézier patch, without losing
  precision, thus making it possible to create perfectly watertight models.
@@ -2414,17 +2438,7 @@ This work was supported by the Hungarian Scientific Research Fund (OTKA,
 \end_inset
 
 124727).
- 
-\begin_inset Note Note
-status open
-
-\begin_layout Plain Layout
-The author thanks Tamás Várady for his valuable comments.
-\end_layout
-
-\end_inset
-
-
+ The author thanks Tamás Várady for his valuable comments.
 \end_layout
 
 \begin_layout Standard
