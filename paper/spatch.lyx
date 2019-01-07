@@ -1094,8 +1094,11 @@ where
 \begin_inset Formula $P_{j,1}^{i}$
 \end_inset
 
- can be computed as in the previous section, after degree elevating the
- Bézier ribbon 3 times.)
+ can be computed as in the 
+\begin_inset Formula $C^{0}$
+\end_inset
+
+ case, after degree elevating the Bézier ribbon 3 times.)
 \end_layout
 
 \begin_layout Standard

@@ -1,0 +1,41 @@
+# -*- mode: org -*-
+
+G1 hole filling with S-patches made easy
+
+KEPAF 2019
+
+* Introduction [2m]
+** Motivation
+- S-patches - algebraically perfect generalization of Bezier surfaces
+- Strange control network, many control points => usability
+- Definition by a Bezier ribbon network
+** Previous work
+- S-patch paper solves it => few details, only for quadratic and cubic boundaries
+- Transfinite surfaces solve the same problem (e.g. MC)
+- GB patches also have "meaningful" interior control
+* S-patches [5m]
+- Definition
+- Control net structure, adjacency (lines in the control net)
+- Boundary panels
+* Hole filling [11m]
+- Stages
+** Boundaries [6m]
+- Boundaries are degree d Bezier curves => C0 trivial
+- G1 between two S-patches:
+  - boundary panels affine images of the domain polygon
+  - opposite boundary panels in the same plane
+- convert the ribbons into Bezier triangle form, with twist-compatibility at the corners
+- this can be done with degree d + 3
+- suffices to compute 3 points of the boundary panels (rest is from affine transformation)
+  - 2 are trivial (from the degree elevation of the boundary curve)
+  - the remaining one is not [see the paper]
+** Interior [5m]
+- Farin: C0 Coons patch with Bezier boundaries ~ simple mask on the control net of a Bezier patch
+- harmonic mask ~ minimal patch
+- simple linear equation system
+- Monterde et al: harmonic & biharmonic masks
+- Mask definition: based on adjacency
+- Biharmonic mask: apply the harmonic mask to itself
+  - natural positioning
+* Examples [1m]
+* Conclusion [1m]
