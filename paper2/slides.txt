@@ -1,0 +1,54 @@
+# -*- mode: org -*-
+
+On the CAD-compatible conversion of S-patches
+
+WAIT 2019
+
+* Introduction [3m]
+** Motivation
+- n-sided surfaces vs. CAD systems
+- central split / trimmed => not watertight / continuity/parameterization issues
+** Previous work
+- S-patch paper => theoretical solution, few details, no examples
+- blossoming [Ramshaw]
+- Simplex composition x2
+* Simplexes & S-patches [7m]
+- simplex: n + 1 points in n dimensions => segment, triangle, tetrahedron etc.
+- barycentric coordinates: (unique) coefficients in the affine combination of vertices of a simplex
+- Bezier curve:
+  C(u) = sum_i P_i B^d_i (u) = sum_i P_i d! / (i! (d-i)!) u^i (1-u)^(d-i)
+  s := (i, d - i), lambda := (u, 1 - u)
+  C(lambda) = sum_s P_s d! / (s1! s2!) lambda1^s1 lambda2^s2
+- Bezier triangle:
+  s has 3 nonnegative numbers, adding up to d
+  lambda = barycentric coordinates of a 2D point relative to some simplex (the domain triangle)
+  T(lambda) = sum_s P_s d! / (s1! s2! s3!) lambda1^s1 lambda2^s2 lambda3^s3
+- S-patch:
+  s has n nonnegative numebrs, adding up to d
+  lambda = barycentric coordinates of an (n-1)D point relative to some simplex
+  S(lambda) = sum_s P_s d! / prod_i(si!) prod_i(lambda_i^s_i)
+- Bezier-simplex: a mapping from k-dimensional barycentric coordinates using Bernstein basis
+- How to create the barycentric coordinates of an (n-1)D point?
+  => generalized barycentric coordinates
+  n-sided polygonal domain (now regular)
+  Wachspress coordinates => prod_{j!=i} dist_j(p) / sum_k prod_{j!=k} dist_j(p)
+- Easy to see that the boundaries are Bezier curves of degree d
+- Strange control net, many control points => next (KEPAF) paper
+* Conversion [7m]
+- overview (quadrilateral -> tensor product)
+** Conversion to quadrilateral S-patch
+- Wachspress coordinates from barycentric coordinates => in Bezier simplex form (Wn)
+- pseudoaffinity => 4-sided S-patch as the composition of Bezier simplexes
+- W4^-1 => using canonical simplex
+- S => using homogenized coordinates
+- Wn => ? use blossoming
+- blossoming intro
+- Wn blossom equation
+- simplex composition [simple equation, efficient algorithm] => details in the paper
+** Conversion to tensor product
+- Equation
+* Example [1m]
+* Discussion [2m]
+- efficiency
+- triangles
+- control net quality
