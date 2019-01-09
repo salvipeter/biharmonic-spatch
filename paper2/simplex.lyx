@@ -532,11 +532,12 @@ noprefix "false"
 \begin_inset Formula $(n-1)$
 \end_inset
 
--dimensional simplex (
+-dimensional simplex to 3D, restricted to the embedded domain polygon (the
+ 
 \begin_inset Formula $n$
 \end_inset
 
- barycentric coordinates) to 3D.
+ generalized barycentric coordinates).
 \end_layout
 
 \begin_layout Standard
