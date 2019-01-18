@@ -1,0 +1,2008 @@
+#LyX 2.3 created this file. For more info see http://www.lyx.org/
+\lyxformat 544
+\begin_document
+\begin_header
+\save_transient_properties true
+\origin unavailable
+\textclass beamer
+\begin_preamble
+\usetheme[compress]{Ilmenau}
+%\usetheme{Ilmenau}
+\usenavigationsymbolstemplate{}
+\usepackage{ragged2e}
+\end_preamble
+\use_default_options true
+\maintain_unincluded_children false
+\language english
+\language_package default
+\inputencoding auto
+\fontencoding global
+\font_roman "default" "default"
+\font_sans "default" "default"
+\font_typewriter "default" "default"
+\font_math "auto" "auto"
+\font_default_family default
+\use_non_tex_fonts false
+\font_sc false
+\font_osf false
+\font_sf_scale 100 100
+\font_tt_scale 100 100
+\use_microtype false
+\use_dash_ligatures false
+\graphics default
+\default_output_format default
+\output_sync 0
+\bibtex_command default
+\index_command default
+\paperfontsize default
+\spacing single
+\use_hyperref false
+\papersize default
+\use_geometry true
+\use_package amsmath 1
+\use_package amssymb 1
+\use_package cancel 1
+\use_package esint 1
+\use_package mathdots 1
+\use_package mathtools 1
+\use_package mhchem 1
+\use_package stackrel 1
+\use_package stmaryrd 1
+\use_package undertilde 1
+\cite_engine basic
+\cite_engine_type default
+\biblio_style plain
+\use_bibtopic false
+\use_indices false
+\paperorientation portrait
+\suppress_date false
+\justification true
+\use_refstyle 0
+\use_minted 0
+\index Index
+\shortcut idx
+\color #008000
+\end_index
+\secnumdepth 3
+\tocdepth 3
+\paragraph_separation indent
+\paragraph_indentation default
+\is_math_indent 0
+\math_numbering_side default
+\quotes_style english
+\dynamic_quotes 0
+\papercolumns 1
+\papersides 1
+\paperpagestyle default
+\tracking_changes false
+\output_changes false
+\html_math_output 0
+\html_css_as_file 0
+\html_be_strict false
+\end_header
+
+\begin_body
+
+\begin_layout Title
+On the CAD-compatible conversion of S-patches
+\end_layout
+
+\begin_layout Author
+Péter Salvi
+\begin_inset Argument 1
+status open
+
+\begin_layout Plain Layout
+P.
+ Salvi
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Institute
+Budapest University of Technology and Economics
+\begin_inset Argument 1
+status open
+
+\begin_layout Plain Layout
+BME
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Date
+WAIT 2019
+\begin_inset VSpace defskip
+\end_inset
+
+
+\begin_inset Newline newline
+\end_inset
+
+Budapest, January 24
+\begin_inset Formula $^{\text{th}}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Frame
+\begin_inset Argument 4
+status open
+
+\begin_layout Plain Layout
+Outline
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_deeper
+\begin_layout Standard
+\begin_inset CommandInset toc
+LatexCommand tableofcontents
+
+\end_inset
+
+
+\end_layout
+
+\end_deeper
+\begin_layout Section
+Introduction
+\end_layout
+
+\begin_layout Subsection
+Motivation
+\end_layout
+
+\begin_layout Frame
+\begin_inset Argument 4
+status open
+
+\begin_layout Plain Layout
+Multi-sided surfaces in CAD software
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_deeper
+\begin_layout Columns
+
+\end_layout
+
+\begin_deeper
+\begin_layout Column
+\begin_inset ERT
+status open
+
+\begin_layout Plain Layout
+
+.7
+\backslash
+textwidth
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Itemize
+Standard surface representations:
+\end_layout
+
+\begin_deeper
+\begin_layout Itemize
+Tensor-product Bézier surface
+\end_layout
+
+\begin_layout Itemize
+Tensor-product B-spline surface
+\end_layout
+
+\begin_layout Itemize
+Tensor-product NURBS surface
+\end_layout
+
+\end_deeper
+\begin_layout Itemize
+No standard multi-sided representation
+\end_layout
+
+\begin_layout Itemize
+Conversion to tensor-product patches
+\end_layout
+
+\begin_deeper
+\begin_layout Itemize
+Trimming
+\end_layout
+
+\begin_deeper
+\begin_layout Itemize
+Parameterization issues
+\end_layout
+
+\begin_layout Itemize
+Asymmetric
+\end_layout
+
+\begin_layout Itemize
+Not watertight
+\end_layout
+
+\end_deeper
+\begin_layout Itemize
+Central split
+\end_layout
+
+\begin_deeper
+\begin_layout Itemize
+Loosely defined dividing curves
+\end_layout
+
+\begin_layout Itemize
+Only 
+\begin_inset Formula $C^{0}$
+\end_inset
+
+ or 
+\begin_inset Formula $G^{1}$
+\end_inset
+
+ continuity
+\end_layout
+
+\end_deeper
+\end_deeper
+\begin_layout Column
+\begin_inset ERT
+status open
+
+\begin_layout Plain Layout
+
+.3
+\backslash
+textwidth
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Graphics
+	filename images/trim-stitch.png
+	display false
+	width 100col%
+
+\end_inset
+
+
+\begin_inset VSpace defskip
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Graphics
+	filename images/central-split.png
+	display false
+	width 100col%
+
+\end_inset
+
+
+\end_layout
+
+\end_deeper
+\end_deeper
+\begin_layout Standard
+\begin_inset Separator plain
+\end_inset
+
+
+\end_layout
+
+\begin_layout Frame
+\begin_inset Argument 4
+status open
+
+\begin_layout Plain Layout
+Solution
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_deeper
+\begin_layout Itemize
+
+\bar under
+Exact
+\bar default
+ tensor product conversion
+\end_layout
+
+\begin_layout Itemize
+Trimmed rational Bézier surface
+\end_layout
+
+\begin_deeper
+\begin_layout Itemize
+Only polynomial (Bézier) boundaries
+\end_layout
+
+\begin_layout Itemize
+Trimming curves 
+\begin_inset Formula $\Rightarrow$
+\end_inset
+
+ lines in the domain
+\end_layout
+
+\end_deeper
+\begin_layout Itemize
+Native 
+\begin_inset Formula $n$
+\end_inset
+
+-sided representation
+\end_layout
+
+\begin_deeper
+\begin_layout Itemize
+S-patch
+\end_layout
+
+\begin_layout Itemize
+Generalization of Bézier curves & triangles
+\end_layout
+
+\begin_layout Itemize
+Suitable for 
+\begin_inset Formula $G^{1}$
+\end_inset
+
+ hole filling [1]
+\end_layout
+
+\end_deeper
+\begin_layout Standard
+
+\size scriptsize
+[1] P.
+ Salvi, 
+\emph on
+
+\begin_inset Formula $G^{1}$
+\end_inset
+
+ hole filling with S-patches made easy
+\emph default
+.
+\begin_inset Newline newline
+\end_inset
+
+
+\begin_inset Formula $\quad\ $
+\end_inset
+
+In: Proceedings of the 12th Conference of the Hungarian Association
+\begin_inset Newline newline
+\end_inset
+
+
+\begin_inset Formula $\qquad\quad$
+\end_inset
+
+for Image Processing and Pattern Recognition, 2019 (accepted).
+\end_layout
+
+\end_deeper
+\begin_layout Subsection
+Previous work
+\end_layout
+
+\begin_layout Frame
+\begin_inset Argument 4
+status open
+
+\begin_layout Plain Layout
+S-patches & simplexes
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_deeper
+\begin_layout Itemize
+[1989, Loop & DeRose]
+\begin_inset Newline newline
+\end_inset
+
+A multi-sided generalization of Bézier surfaces
+\end_layout
+
+\begin_deeper
+\begin_layout Itemize
+The original S-patch publication
+\end_layout
+
+\begin_layout Itemize
+Contains 
+\emph on
+theoretical results
+\emph default
+ on the tensor product conversion
+\end_layout
+
+\begin_layout Itemize
+Missing from the description of the algorithm:
+\end_layout
+
+\begin_deeper
+\begin_layout Itemize
+Composition of rational Bézier simplexes
+\end_layout
+
+\begin_layout Itemize
+
+\bar under
+Blossom of Wachspress coordinates
+\end_layout
+
+\end_deeper
+\end_deeper
+\begin_layout Itemize
+[1987, Ramshaw]
+\begin_inset Newline newline
+\end_inset
+
+Blossoming: A connect-the-dots approach to splines
+\end_layout
+
+\begin_layout Itemize
+[1988, DeRose]
+\begin_inset Newline newline
+\end_inset
+
+Composing Bézier simplexes
+\end_layout
+
+\begin_layout Itemize
+[1993, DeRose et al.]
+\begin_inset Newline newline
+\end_inset
+
+Functional composition algorithms via blossoming
+\end_layout
+
+\end_deeper
+\begin_layout Standard
+\begin_inset Separator plain
+\end_inset
+
+
+\end_layout
+
+\begin_layout Section
+Simplexes & S-patches
+\end_layout
+
+\begin_layout Subsection
+Simplexes
+\end_layout
+
+\begin_layout Frame
+\begin_inset Argument 4
+status open
+
+\begin_layout Plain Layout
+Simplex in 
+\begin_inset Formula $n$
+\end_inset
+
+D
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_deeper
+\begin_layout Columns
+
+\end_layout
+
+\begin_deeper
+\begin_layout Column
+\begin_inset ERT
+status open
+
+\begin_layout Plain Layout
+
+.6
+\backslash
+textwidth
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Itemize
+\begin_inset Formula $(n+1)$
+\end_inset
+
+ points in 
+\begin_inset Formula $n$
+\end_inset
+
+D
+\end_layout
+
+\begin_layout Itemize
+Let 
+\begin_inset Formula $V_{i}$
+\end_inset
+
+ denote these points
+\end_layout
+
+\begin_layout Itemize
+Any 
+\begin_inset Formula $n$
+\end_inset
+
+D point is uniquely expressed
+\begin_inset Newline newline
+\end_inset
+
+by the affine combination of 
+\begin_inset Formula $V_{i}$
+\end_inset
+
+:
+\begin_inset Formula 
+\[
+p=\sum_{i=1}^{n}\lambda_{i}V_{i}\qquad\text{with }\sum_{i=1}^{n}\lambda_{i}=1
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Itemize
+\begin_inset Formula $\lambda_{i}$
+\end_inset
+
+ are the barycentric coordinates
+\begin_inset Newline newline
+\end_inset
+
+of 
+\begin_inset Formula $p$
+\end_inset
+
+ relative to the simplex
+\end_layout
+
+\begin_layout Column
+\begin_inset ERT
+status open
+
+\begin_layout Plain Layout
+
+.4
+\backslash
+textwidth
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Graphics
+	filename images/simplexes.jpg
+	display false
+	width 100col%
+
+\end_inset
+
+
+\begin_inset VSpace defskip
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Graphics
+	filename images/2-simplex_t0.pdf
+	display false
+	scale 3
+
+\end_inset
+
+
+\begin_inset space \hfill{}
+\end_inset
+
+
+\begin_inset Graphics
+	filename images/3-simplex_t0.pdf
+	display false
+	scale 3
+
+\end_inset
+
+
+\begin_inset space \hfill{}
+\end_inset
+
+
+\begin_inset Graphics
+	filename images/4-simplex_t0.pdf
+	display false
+	scale 3
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Graphics
+	filename images/5-simplex_t0.pdf
+	display false
+	scale 3
+
+\end_inset
+
+
+\begin_inset space \hfill{}
+\end_inset
+
+
+\begin_inset Graphics
+	filename images/6-simplex_t0.pdf
+	display false
+	scale 3
+
+\end_inset
+
+
+\begin_inset space \hfill{}
+\end_inset
+
+
+\begin_inset Graphics
+	filename images/7-simplex_t0.pdf
+	display false
+	scale 3
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\align center
+(images from Wikipedia)
+\end_layout
+
+\end_deeper
+\end_deeper
+\begin_layout Standard
+\begin_inset Separator plain
+\end_inset
+
+
+\end_layout
+
+\begin_layout Frame
+\begin_inset Argument 4
+status open
+
+\begin_layout Plain Layout
+Bézier curve
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_deeper
+\begin_layout Standard
+Let's look at the equation of a Bézier curve:
+\begin_inset Formula 
+\[
+C(u)=\sum_{i=0}^{d}P_{i}B_{i}^{d}(u)\pause=\sum_{i=0}^{d}P_{i}\frac{d!}{i!(d-i)!}u^{i}(1-u)^{d-i}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Pause
+
+\end_layout
+
+\begin_layout Standard
+Let 
+\begin_inset Formula $\mathbf{s}=(i,d-i)$
+\end_inset
+
+ and 
+\begin_inset Formula $\mathbf{\lambda}=(u,1-u)$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Pause
+
+\end_layout
+
+\begin_layout Standard
+Then
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+C(\mathbf{\lambda})=\sum_{\mathbf{s}}P_{\mathbf{s}}\frac{d!}{s_{1}!s_{2}!}\lambda_{1}^{s_{1}}\lambda_{2}^{s_{2}}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\end_deeper
+\begin_layout Standard
+\begin_inset Separator plain
+\end_inset
+
+
+\end_layout
+
+\begin_layout Frame
+\begin_inset Argument 4
+status open
+
+\begin_layout Plain Layout
+Bézier triangle
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_deeper
+\begin_layout Standard
+Now let's look at the equation of a Bézier triangle:
+\begin_inset Formula 
+\[
+T(\mathbf{\lambda})=\sum_{\mathbf{s}}P_{\mathbf{s}}\frac{d!}{s_{1}!s_{2}!s_{3}!}\lambda_{1}^{s_{1}}\lambda_{2}^{s_{2}}\lambda_{3}^{s_{3}}=\sum_{\mathbf{s}}P_{\mathbf{s}}B_{\mathbf{s}}^{d}(\mathbf{\lambda})
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Itemize
+\begin_inset Formula $\mathbf{s}=(s_{1},s_{2},s_{3})$
+\end_inset
+
+ with 
+\begin_inset Formula $s_{i}\geq0$
+\end_inset
+
+ and 
+\begin_inset Formula $s_{1}+s_{2}+s_{3}=d$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Itemize
+\begin_inset Formula $\mathbf{\lambda}=(\lambda_{1},\lambda_{2},\lambda_{3})$
+\end_inset
+
+ barycentric coordinates of a 2D point
+\begin_inset Newline newline
+\end_inset
+
+relative to the domain triangle (simplex)
+\end_layout
+
+\begin_layout Block
+\begin_inset Argument 2
+status open
+
+\begin_layout Plain Layout
+Did you know?
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_deeper
+\begin_layout Standard
+This was 
+\emph on
+Paul de Casteljau
+\emph default
+'s generalization of Bézier curves.
+\end_layout
+
+\begin_layout Itemize
+``Bézier'' curves were also his invention
+\end_layout
+
+\begin_layout Itemize
+Tensor product surfaces were invented by 
+\emph on
+Pierre Bézier
+\end_layout
+
+\begin_layout Itemize
+de Casteljau worked at Citroën, while Bézier at Renault
+\end_layout
+
+\end_deeper
+\end_deeper
+\begin_layout Standard
+\begin_inset Separator plain
+\end_inset
+
+
+\end_layout
+
+\begin_layout Frame
+\begin_inset Argument 4
+status open
+
+\begin_layout Plain Layout
+Bézier simplex
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_deeper
+\begin_layout Itemize
+The logical generalization to 
+\begin_inset Formula $(n-1)$
+\end_inset
+
+ dimensions:
+\begin_inset Formula 
+\[
+S(\mathbf{\lambda})=\sum_{\mathbf{s}}P_{\mathbf{s}}\frac{d!}{\prod_{i=1}^{n}s_{i}!}\prod_{i=1}^{n}\lambda_{i}^{s_{i}}=\sum_{\mathbf{s}}P_{\mathbf{s}}B_{\mathbf{s}}^{d}(\mathbf{\lambda})
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Itemize
+\begin_inset Formula $\mathbf{s}=(s_{1},s_{2},\dots,s_{n})$
+\end_inset
+
+ with 
+\begin_inset Formula $s_{i}\geq0$
+\end_inset
+
+ and 
+\begin_inset Formula $\sum_{i=1}^{n}s_{i}=d$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Itemize
+\begin_inset Formula $\mathbf{\lambda}=(\lambda_{1},\lambda_{2},\dots,\lambda_{n})$
+\end_inset
+
+ barycentric coordinates
+\begin_inset Newline newline
+\end_inset
+
+of an 
+\begin_inset Formula $(n-1)$
+\end_inset
+
+D point relative to the domain simplex
+\end_layout
+
+\begin_layout AlertBlock
+\begin_inset Argument 2
+status open
+
+\begin_layout Plain Layout
+Note
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout AlertBlock
+Bézier simplexes are mappings, not geometric entities!
+\end_layout
+
+\end_deeper
+\begin_layout Subsection
+S-patches
+\end_layout
+
+\begin_layout Frame
+\begin_inset Argument 4
+status open
+
+\begin_layout Plain Layout
+S-patches as Bézier simplexes
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_deeper
+\begin_layout Itemize
+S-patch equation (
+\begin_inset Formula $n$
+\end_inset
+
+ sides, depth 
+\begin_inset Formula $d$
+\end_inset
+
+):
+\begin_inset Formula 
+\[
+S(\mathbf{\lambda})=\sum_{\mathbf{s}}P_{\mathbf{s}}\frac{d!}{\prod_{i=1}^{n}s_{i}!}\prod_{i=1}^{n}\lambda_{i}^{s_{i}}=\sum_{\mathbf{s}}P_{\mathbf{s}}B_{\mathbf{s}}^{d}(\mathbf{\lambda})
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Itemize
+Domain for an 
+\begin_inset Formula $n$
+\end_inset
+
+-sided S-patch:
+\end_layout
+
+\begin_deeper
+\begin_layout Itemize
+Regular 
+\begin_inset Formula $n$
+\end_inset
+
+-sided polygon (in 2D)
+\end_layout
+
+\end_deeper
+\begin_layout Itemize
+Domain for an 
+\begin_inset Formula $(n-1)$
+\end_inset
+
+-dimensional Bézier simplex:
+\end_layout
+
+\begin_deeper
+\begin_layout Itemize
+An 
+\begin_inset Formula $(n-1)$
+\end_inset
+
+-dimensional simplex (
+\begin_inset Formula $n$
+\end_inset
+
+ barycentric coordinates)
+\end_layout
+
+\end_deeper
+\begin_layout Itemize
+Needed:
+\end_layout
+
+\begin_deeper
+\begin_layout Itemize
+Mapping from an 
+\begin_inset Formula $n$
+\end_inset
+
+-sided polygon to 
+\begin_inset Formula $n$
+\end_inset
+
+ barycentric coordinates
+\end_layout
+
+\begin_layout Itemize
+Generalized barycentric coordinates
+\end_layout
+
+\begin_deeper
+\begin_layout Itemize
+E.g.
+\begin_inset space ~
+\end_inset
+
+Wachspress, mean value, etc.
+\end_layout
+
+\end_deeper
+\begin_layout Itemize
+Defines an embedding in the 
+\begin_inset Formula $(n-1)$
+\end_inset
+
+-dimensional simplex
+\end_layout
+
+\end_deeper
+\end_deeper
+\begin_layout Standard
+\begin_inset Separator plain
+\end_inset
+
+
+\end_layout
+
+\begin_layout Frame
+\begin_inset Argument 4
+status open
+
+\begin_layout Plain Layout
+Control structure
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_deeper
+\begin_layout Itemize
+Very complex – many control points, hard to use manually
+\end_layout
+
+\begin_layout Itemize
+Boundary control points define degree 
+\begin_inset Formula $d$
+\end_inset
+
+ Bézier curves
+\end_layout
+
+\begin_layout Itemize
+Adjacent control points have shifted labels,
+\begin_inset Newline newline
+\end_inset
+
+e.g.
+\begin_inset space ~
+\end_inset
+
+21000 
+\begin_inset Formula $\rightarrow$
+\end_inset
+
+ 30000, 11001, 20100, 12000
+\end_layout
+
+\begin_layout Standard
+\begin_inset Graphics
+	filename images/5-3-cnet.pdf
+	display false
+	width 50text%
+
+\end_inset
+
+
+\begin_inset Graphics
+	filename images/6-5-cnet.png
+	display false
+	width 50text%
+
+\end_inset
+
+
+\end_layout
+
+\end_deeper
+\begin_layout Section
+Conversion
+\end_layout
+
+\begin_layout Frame
+\begin_inset Argument 4
+status open
+
+\begin_layout Plain Layout
+Overview
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_deeper
+\begin_layout Block
+\begin_inset Argument 2
+status open
+
+\begin_layout Plain Layout
+Claim 6.4 in [1989, Loop & DeRose]
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_deeper
+\begin_layout Standard
+For every 
+\begin_inset Formula $m$
+\end_inset
+
+-sided regular S-patch of depth 
+\begin_inset Formula $d$
+\end_inset
+
+, there exists an equivalent 
+\begin_inset Formula $n$
+\end_inset
+
+-sided regular S-patch of depth 
+\begin_inset Formula $d(m-2)$
+\end_inset
+
+.
+\end_layout
+
+\end_deeper
+\begin_layout Standard
+\begin_inset ERT
+status open
+
+\begin_layout Plain Layout
+
+{}
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Block
+\begin_inset Argument 2
+status open
+
+\begin_layout Plain Layout
+Lemma 6.2 in [1989, Loop & DeRose]
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_deeper
+\begin_layout Standard
+For every 
+\begin_inset Formula $4$
+\end_inset
+
+-sided regular S-patch of depth 
+\begin_inset Formula $d$
+\end_inset
+
+, there exists an equivalent tensor product Bézier patch of degree 
+\begin_inset Formula $d$
+\end_inset
+
+.
+\end_layout
+
+\end_deeper
+\begin_layout Enumerate
+Convert the 
+\begin_inset Formula $n$
+\end_inset
+
+-sided S-patch of depth 
+\begin_inset Formula $d$
+\end_inset
+
+
+\begin_inset Newline newline
+\end_inset
+
+to a quadrilateral S-patch of depth 
+\begin_inset Formula $d(n-2)$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Enumerate
+Convert the quadrilateral S-patch
+\begin_inset Newline newline
+\end_inset
+
+to a tensor product Bézier patch of degree 
+\begin_inset Formula $d(n-2)$
+\end_inset
+
+.
+\end_layout
+
+\end_deeper
+\begin_layout Subsection
+Conversion to quadrilateral S-patch
+\end_layout
+
+\begin_layout Frame
+\begin_inset Argument 4
+status open
+
+\begin_layout Plain Layout
+Conversion as simplex composition
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_deeper
+\begin_layout Itemize
+Wachspress coordinates on an 
+\begin_inset Formula $n$
+\end_inset
+
+-sided polygon
+\end_layout
+
+\begin_deeper
+\begin_layout Itemize
+\begin_inset Formula $\dots$
+\end_inset
+
+ have a Bézier simplex form (denoted by 
+\begin_inset Formula $W_{n}$
+\end_inset
+
+)
+\end_layout
+
+\begin_layout Itemize
+\begin_inset Formula $\dots$
+\end_inset
+
+ are 
+\emph on
+pseudoaffine
+\emph default
+ (have an affine left inverse 
+\begin_inset Formula $W_{n}^{-1}$
+\end_inset
+
+)
+\end_layout
+
+\end_deeper
+\begin_layout Itemize
+Mapping from the domain polygon to a 3D point:
+\begin_inset Formula 
+\[
+S\circ W_{n}\pause=S\circ W_{n}\circ(W_{4}^{-1}\circ W_{4})\pause=(S\circ W_{n}\circ W_{4}^{-1})\circ W_{4}\pause
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Itemize
+The 4-sided formulation is the composition of 3 simplexes:
+\end_layout
+
+\begin_deeper
+\begin_layout Itemize
+\begin_inset Formula $W_{4}^{-1}$
+\end_inset
+
+: defined by the vertices of the rectangular domain
+\end_layout
+
+\begin_layout Itemize
+\begin_inset Formula $S$
+\end_inset
+
+: the S-patch (with homogenized control points)
+\end_layout
+
+\begin_layout Itemize
+\begin_inset Formula $W_{n}$
+\end_inset
+
+: 
+\color red
+???
+\color inherit
+ [a rational Bézier simplex of degree 
+\begin_inset Formula $n-2$
+\end_inset
+
+]
+\end_layout
+
+\end_deeper
+\begin_layout Itemize
+Composition:
+\end_layout
+
+\begin_deeper
+\begin_layout Itemize
+Two algorithms (simple vs.
+ efficient) [see the paper]
+\end_layout
+
+\end_deeper
+\end_deeper
+\begin_layout Standard
+\begin_inset Separator plain
+\end_inset
+
+
+\end_layout
+
+\begin_layout Frame
+\begin_inset Argument 4
+status open
+
+\begin_layout Plain Layout
+Determining the control points of 
+\begin_inset Formula $W_{n}$
+\end_inset
+
+ – homogenization
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_deeper
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\lambda_{i}(p)=\frac{\prod_{j\neq i-1,i}D_{j}(p)}{\sum_{k=1}^{n}\prod_{j\neq k-1,k}D_{j}(p)}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Itemize
+\begin_inset Formula $D_{j}(p)$
+\end_inset
+
+ is the signed distance of 
+\begin_inset Formula $p$
+\end_inset
+
+ from the 
+\begin_inset Formula $j$
+\end_inset
+
+-th side
+\end_layout
+
+\begin_layout Itemize
+Rational expression 
+\begin_inset Formula $\Rightarrow$
+\end_inset
+
+ homogenized coordinates
+\end_layout
+
+\begin_deeper
+\begin_layout Itemize
+Use the barycentric coordinates as ``normal'' coordinates
+\end_layout
+
+\begin_layout Itemize
+\begin_inset Formula $(x,y,z)\equiv(wx,wy,wz,w(1-x-y-z))$
+\end_inset
+
+
+\end_layout
+
+\end_deeper
+\begin_layout Itemize
+Homogenized form of 
+\begin_inset Formula $W_{n}$
+\end_inset
+
+:
+\begin_inset Formula 
+\[
+\left\{ \prod_{j\neq i-1,i}D_{j}(p)\right\} 
+\]
+
+\end_inset
+
+
+\end_layout
+
+\end_deeper
+\begin_layout Standard
+\begin_inset Separator plain
+\end_inset
+
+
+\end_layout
+
+\begin_layout Frame
+\begin_inset Argument 4
+status open
+
+\begin_layout Plain Layout
+Determining the control points of 
+\begin_inset Formula $W_{n}$
+\end_inset
+
+ – polarization
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_deeper
+\begin_layout Standard
+For any homogeneous polynomial 
+\begin_inset Formula $Q(u)$
+\end_inset
+
+ of degree 
+\begin_inset Formula $d$
+\end_inset
+
+, 
+\begin_inset Formula $\exists q$
+\end_inset
+
+ s.t.
+\begin_inset Formula 
+\begin{align*}
+q(u_{1},\dots,u_{d}) & =q(u_{\pi_{1}},\dots,u_{\pi_{d}}),\\
+q(u_{1},\dots,\alpha u_{k_{1}}+\beta u_{k_{2}},\dots,u_{d}) & =\alpha q(u_{1},\dots,u_{k_{1}},\dots,u_{d})\\
+ & +\beta q(u_{1},\dots,u_{k_{2}},\dots,u_{d}),\\
+q(u,\dots,u) & =Q(u).
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Then 
+\begin_inset Formula $q$
+\end_inset
+
+ is called the 
+\emph on
+blossom
+\emph default
+ of 
+\begin_inset Formula $Q$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+The control points of its Bézier simplex form are
+\begin_inset Formula 
+\[
+P_{\mathbf{s}}^{Q}=q(\underbrace{V_{1},\dots,V_{1}}_{s_{1}},\underbrace{V_{2},\dots,V_{2}}_{s_{2}},\dots,\underbrace{V_{n},\dots,V_{n}}_{s_{n}}),
+\]
+
+\end_inset
+
+where 
+\begin_inset Formula $V_{i}$
+\end_inset
+
+ are the vertices of the simplex.
+\end_layout
+
+\end_deeper
+\begin_layout Standard
+\begin_inset Separator plain
+\end_inset
+
+
+\end_layout
+
+\begin_layout Frame
+\begin_inset Argument 4
+status open
+
+\begin_layout Plain Layout
+Determining the control points of 
+\begin_inset Formula $W_{n}$
+\end_inset
+
+ – blossom
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_deeper
+\begin_layout Itemize
+The blossom of 
+\begin_inset Formula $W_{n}$
+\end_inset
+
+ is
+\begin_inset Formula 
+\[
+q(p_{1},\dots,p_{n-2})_{i}=\frac{1}{(n-2)!}\cdot\sum_{\pi\in\Pi(n-2)}\prod_{\substack{k=1\\
+j\neq i-1,i
+}
+}^{n-2}D_{j}(p_{\pi_{k}})
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_deeper
+\begin_layout Itemize
+\begin_inset Formula $\Pi(n-2)$
+\end_inset
+
+ is the set of permutations of 
+\begin_inset Formula $\{1,\dots,n-2\}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Itemize
+\begin_inset Formula $k$
+\end_inset
+
+ runs from 
+\begin_inset Formula $1$
+\end_inset
+
+ to 
+\begin_inset Formula $n-2$
+\end_inset
+
+ while 
+\begin_inset Formula $j$
+\end_inset
+
+ from 
+\begin_inset Formula $1$
+\end_inset
+
+ to 
+\begin_inset Formula $n$
+\end_inset
+
+ skipping 
+\begin_inset Formula $i-1$
+\end_inset
+
+ and 
+\begin_inset Formula $i$
+\end_inset
+
+
+\end_layout
+
+\end_deeper
+\begin_layout Itemize
+With this, the control points can be computed
+\end_layout
+
+\begin_layout Itemize
+Simplex composition gives the quadrilateral S-patch
+\end_layout
+
+\begin_layout Itemize
+Convert to ``normal'' homogeneous coordinates 
+\begin_inset Formula $(wx,wy,wz,w)$
+\end_inset
+
+
+\end_layout
+
+\end_deeper
+\begin_layout Subsection
+Conversion to tensor product form
+\end_layout
+
+\begin_layout Frame
+\begin_inset Argument 4
+status open
+
+\begin_layout Plain Layout
+Explicit formula for tensor product control points
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_deeper
+\begin_layout Standard
+An 
+\begin_inset Formula $n$
+\end_inset
+
+-sided S-patch of depth 
+\begin_inset Formula $d$
+\end_inset
+
+ can be represented as
+\begin_inset Formula 
+\[
+\hat{S}(u,v)=\sum_{i=0}^{d}\sum_{j=0}^{d}C_{ij}B_{i}^{d}(u)B_{j}^{d}(v),
+\]
+
+\end_inset
+
+where
+\begin_inset Formula 
+\[
+C_{ij}=\sum_{\substack{\mathbf{s}\\
+s_{2}+s_{3}=i\\
+s_{3}+s_{4}=j
+}
+}\frac{\binom{d}{\mathbf{s}}}{\binom{d}{i}\binom{d}{j}}P_{\mathbf{s}}.
+\]
+
+\end_inset
+
+
+\end_layout
+
+\end_deeper
+\begin_layout Standard
+\begin_inset Separator plain
+\end_inset
+
+
+\end_layout
+
+\begin_layout Section
+Conclusion
+\end_layout
+
+\begin_layout Subsection
+Example
+\end_layout
+
+\begin_layout Frame
+\begin_inset Argument 4
+status open
+
+\begin_layout Plain Layout
+Converting a 5-sided patch – control net
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_deeper
+\begin_layout Standard
+\align center
+\begin_inset Graphics
+	filename images/5sided-controlnet.png
+	display false
+	width 90text%
+
+\end_inset
+
+
+\end_layout
+
+\end_deeper
+\begin_layout Standard
+\begin_inset Separator plain
+\end_inset
+
+
+\end_layout
+
+\begin_layout Frame
+\begin_inset Argument 4
+status open
+
+\begin_layout Plain Layout
+Converting a 5-sided patch – contours
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_deeper
+\begin_layout Standard
+\align center
+\begin_inset Graphics
+	filename images/5sided-contours.png
+	display false
+	width 90text%
+
+\end_inset
+
+
+\end_layout
+
+\end_deeper
+\begin_layout Standard
+\begin_inset Separator plain
+\end_inset
+
+
+\end_layout
+
+\begin_layout Frame
+\begin_inset Argument 4
+status open
+
+\begin_layout Plain Layout
+Converting a 5-sided patch – trimmed tensor product
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_deeper
+\begin_layout Standard
+\align center
+\begin_inset Graphics
+	filename images/5sided-tensor.png
+	display false
+	width 90text%
+
+\end_inset
+
+
+\end_layout
+
+\end_deeper
+\begin_layout Standard
+\begin_inset Separator plain
+\end_inset
+
+
+\end_layout
+
+\begin_layout Frame
+\begin_inset Argument 4
+status open
+
+\begin_layout Plain Layout
+Converting a 5-sided patch – untrimmed tensor product
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_deeper
+\begin_layout Standard
+\align center
+\begin_inset Graphics
+	filename images/5sided-tensor-full.png
+	display false
+	width 90text%
+
+\end_inset
+
+
+\end_layout
+
+\end_deeper
+\begin_layout Subsection
+Discussion
+\end_layout
+
+\begin_layout Frame
+\begin_inset Argument 4
+status open
+
+\begin_layout Plain Layout
+Limitations
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_deeper
+\begin_layout Itemize
+Efficiency
+\end_layout
+
+\begin_deeper
+\begin_layout Itemize
+\begin_inset Formula $n=5$
+\end_inset
+
+, 
+\begin_inset Formula $d=8$
+\end_inset
+
+ took 
+\begin_inset Formula $>5$
+\end_inset
+
+ minutes on a modern machine
+\begin_inset Newline newline
+\end_inset
+
+(How long would it have taken in 1989?)
+\end_layout
+
+\begin_layout Itemize
+Much faster algorithm is developed (see our upcoming paper)
+\end_layout
+
+\end_deeper
+\begin_layout Itemize
+3-sided patches
+\end_layout
+
+\begin_deeper
+\begin_layout Itemize
+For Bézier triangles, the resulting patch is not rational
+\end_layout
+
+\begin_layout Itemize
+But there are simple alternative methods, e.g.
+ [1992, Warren]
+\end_layout
+
+\end_deeper
+\begin_layout Itemize
+Control net quality
+\end_layout
+
+\begin_deeper
+\begin_layout Itemize
+Singularities on a circle around the domain
+\end_layout
+
+\begin_deeper
+\begin_layout Itemize
+Denominator of Wachspress coordinates vanishes
+\end_layout
+
+\end_deeper
+\begin_layout Itemize
+Unstable control points near the corners
+\end_layout
+
+\end_deeper
+\begin_layout Itemize
+Conclusion
+\end_layout
+
+\begin_deeper
+\begin_layout Itemize
+The algorithm works, but it is not practical
+\end_layout
+
+\end_deeper
+\end_deeper
+\begin_layout Standard
+\begin_inset Separator plain
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsection*
+The End
+\end_layout
+
+\begin_layout Frame
+\begin_inset Argument 4
+status open
+
+\begin_layout Plain Layout
+Any questions?
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_deeper
+\begin_layout Standard
+\align center
+
+\size larger
+Thank you for your attention.
+\end_layout
+
+\end_deeper
+\end_body
+\end_document
